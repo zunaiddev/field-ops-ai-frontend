@@ -1,5 +1,5 @@
 import {useState} from 'react'
-import {Link} from 'react-router-dom'
+import {Link, useNavigate} from 'react-router-dom'
 import {useForm} from 'react-hook-form'
 import {AuthLayout} from '../layouts/AuthLayout'
 import {Input} from '../components/ui/Input'
@@ -17,6 +17,7 @@ import {HttpStatusCode} from 'axios'
 export default function Login() {
   const [showVerificationModal, setShowVerificationModal] = useState(false)
   const [unverifiedEmail, setUnverifiedEmail] = useState('')
+  const navigate = useNavigate();
 
   const {
     register,
@@ -39,9 +40,10 @@ export default function Login() {
     })
 
     if (success) {
-      console.log(payload)
-      toast.success('Login successfully!')
-      return
+      localStorage.setItem("token", payload?.accessToken as string);
+      toast.success('Login successfully!');
+      navigate('/dashboard')
+      return;
     }
 
     const errorCode: string | undefined = error?.code;

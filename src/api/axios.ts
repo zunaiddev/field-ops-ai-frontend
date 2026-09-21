@@ -1,9 +1,6 @@
-import axios, {
-  type AxiosError,
-  type AxiosInstance,
-  HttpStatusCode,
-  type InternalAxiosRequestConfig,
-} from 'axios'
+import axios, {type AxiosError, type AxiosInstance, HttpStatusCode, type InternalAxiosRequestConfig,} from 'axios'
+import toast from "react-hot-toast";
+import authService from "../services/authService.ts";
 
 const BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000/api'
 
@@ -26,15 +23,22 @@ export const protectedApi: AxiosInstance = axios.create({
 })
 
 protectedApi.interceptors.request.use(
-  (config: InternalAxiosRequestConfig) => {
-    const token =
-      localStorage.getItem('token') ||
-      localStorage.getItem('access_token') ||
-      sessionStorage.getItem('token')
+  async (config: InternalAxiosRequestConfig) => {
+    let token: string | null = localStorage.getItem('token');
 
-    if (token && config.headers) {
-      config.headers.Authorization = `Bearer ${token}`
+    if (!token) {
+      const {success, payload} = await authService.refreshToken();
+
+      if (success) {
+        token = payload?.accessToken as string;
+      } else {
+        toast.error('Session expired');
+        window.location.href = '/auth/login';
+        return Promise.reject("No access token");
+      }
     }
+
+    config.headers.Authorization = `Bearer ${token}`
 
     return config
   },

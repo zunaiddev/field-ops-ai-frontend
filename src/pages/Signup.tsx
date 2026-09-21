@@ -44,7 +44,7 @@ export default function Signup() {
   })
 
   async function onSubmit(data: OrganizationRegistrationForm): Promise<void> {
-    const { success, error, status } = await authService.orgRegistration({
+    const { success, error } = await authService.orgRegistration({
       orgName: data.orgName.trim(),
       orgSlug: data.orgSlug?.trim() || undefined,
       timezone: data.timezone,

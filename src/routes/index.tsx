@@ -2,6 +2,12 @@ import { createBrowserRouter, Navigate, RouterProvider, type RouteObject } from 
 import Login from '../pages/Login'
 import Signup from '../pages/Signup'
 import PublicRoute from './guards/PublicRoute'
+import AppLayout from '../layouts/AppLayout'
+import Dashboard from '../pages/Dashboard'
+import Employees from '../pages/Employees'
+import Customers from '../pages/Customers'
+import Jobs from '../pages/Jobs'
+import Settings from '../pages/Settings'
 
 const routes: RouteObject[] = [
   {
@@ -24,11 +30,37 @@ const routes: RouteObject[] = [
   },
   {
     path: '/',
-    element: <Navigate to="/auth/login" replace />,
+    element: <AppLayout />,
+    children: [
+      {
+        index: true,
+        element: <Navigate to="/dashboard" replace />,
+      },
+      {
+        path: 'dashboard',
+        element: <Dashboard />,
+      },
+      {
+        path: 'employees',
+        element: <Employees />,
+      },
+      {
+        path: 'customers',
+        element: <Customers />,
+      },
+      {
+        path: 'jobs',
+        element: <Jobs />,
+      },
+      {
+        path: 'settings',
+        element: <Settings />,
+      },
+    ],
   },
   {
     path: '*',
-    element: <Navigate to="/auth/login" replace />,
+    element: <Navigate to="/dashboard" replace />,
   },
 ]
 
