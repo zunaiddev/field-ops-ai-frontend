@@ -1,11 +1,11 @@
-import { forwardRef, useId, type ReactNode, type SelectHTMLAttributes } from 'react'
+import { forwardRef, type ReactNode, type SelectHTMLAttributes, useId } from 'react'
 import {
-  type FormIntegrationProps,
-  type FormFieldError,
-  getErrorMessage,
   buildFieldRules,
+  type FormFieldError,
+  type FormIntegrationProps,
+  getErrorMessage,
   mergeRefs,
-} from './formUtils'
+} from '../../utils/formUtils'
 
 export interface SelectOption {
   value: string

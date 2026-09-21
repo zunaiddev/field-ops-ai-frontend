@@ -1,38 +1,92 @@
 import {useState} from 'react'
-import {type SubmitHandler, useForm} from 'react-hook-form'
-import {AuthLayout} from '../layouts'
-import {AuthPrompt, Button, Input, PasswordInput, Select} from '../components/ui'
-import {orgNameToSlug} from '../utils'
-import type {OrganizationRegistrationForm} from '../types'
-import {COMMON_CURRENCIES, COMMON_TIMEZONES, EMAIL_REGEX, SLUG_REGEX} from '../constants'
+import {useForm} from 'react-hook-form'
+import {useNavigate} from 'react-router-dom'
+import toast from 'react-hot-toast'
+import {AuthLayout} from '../layouts/AuthLayout'
+import {AuthPrompt} from '../components/ui/AuthPrompt'
+import {Button} from '../components/ui/Button'
+import {Input} from '../components/ui/Input'
+import {PasswordInput} from '../components/ui/PasswordInput'
+import {Select} from '../components/ui/Select'
+import {EmailVerificationModal} from '../components/ui/EmailVerificationModal'
+import {orgNameToSlug} from '../utils/slug'
+import type {OrganizationRegistrationForm} from '../types/auth'
+import {COMMON_CURRENCIES, COMMON_TIMEZONES, EMAIL_REGEX, SLUG_REGEX} from '../constants/auth'
+import authService from '../services/authService.ts'
 
 export default function Signup() {
+  const navigate = useNavigate()
   const [isSlugManuallyEdited, setIsSlugManuallyEdited] = useState(false)
+  const [showVerificationModal, setShowVerificationModal] = useState(false)
+  const [registeredEmail, setRegisteredEmail] = useState('')
 
   const {
     register,
     handleSubmit,
     setValue,
     getValues,
+    setError,
     trigger,
     formState: { errors, isSubmitting },
   } = useForm<OrganizationRegistrationForm>({
     mode: 'onTouched',
     defaultValues: {
-      orgName: '',
-      orgSlug: '',
+      orgName: 'Blue Cors',
+      orgSlug: 'blue-cors',
       timezone: 'Australia/Sydney',
       currency: 'USD',
-      firstName: '',
-      lastName: '',
-      email: '',
-      password: '',
-      confirmPassword: '',
+      firstName: 'John',
+      lastName: 'Don',
+      email: 'john@gmail.com',
+      password: 'John@123',
+      confirmPassword: 'John@123',
     },
   })
 
-  const onSubmit: SubmitHandler<OrganizationRegistrationForm> = async (data) => {
-    console.log('Organization registration submitted:', data);
+  async function onSubmit(data: OrganizationRegistrationForm): Promise<void> {
+    const { success, error, status } = await authService.orgRegistration({
+      orgName: data.orgName.trim(),
+      orgSlug: data.orgSlug?.trim() || undefined,
+      timezone: data.timezone,
+      currency: data.currency,
+      firstName: data.firstName.trim(),
+      lastName: data.lastName.trim(),
+      email: data.email.trim(),
+      password: data.password,
+    })
+
+    if (success) {
+      setRegisteredEmail(data.email.trim())
+      setShowVerificationModal(true)
+      toast.success('Registration successful! Please verify your email.')
+      return
+    }
+
+    const errorCode = error?.code;
+
+    toast.error(error?.message || 'Registration failed. Please try again.');
+
+    console.log(errorCode)
+
+    if (errorCode === "SLUG_CONFLICT"){
+      return setError("orgSlug", {message: "Slug is already registered"});
+    }
+
+    if (errorCode === "USER_ALREADY_EXISTS") {
+        return setError('email', {message: "Email is already registered"});
+    }
+
+    toast.error(error?.message || 'Registration failed. Please try again.');
+  }
+
+  const handleResendVerification = async () => {
+    if (!registeredEmail) return
+    const res = await authService.resendVerificationEmail(registeredEmail)
+    if (res.success) {
+      toast.success('Verification email resent successfully!')
+    } else {
+      toast.error(res.error?.message || 'Failed to resend verification email.')
+    }
   }
 
   return (
@@ -277,6 +331,16 @@ export default function Signup() {
           </Button>
         </div>
       </form>
+
+      {/* Verification Email Modal */}
+      <EmailVerificationModal
+        isOpen={showVerificationModal}
+        onClose={() => setShowVerificationModal(false)}
+        email={registeredEmail}
+        onPrimaryAction={() => navigate('/auth/login')}
+        primaryActionText="Go to Sign In"
+        onResend={handleResendVerification}
+      />
     </AuthLayout>
   )
 }

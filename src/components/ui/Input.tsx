@@ -1,11 +1,11 @@
-import { forwardRef, useId, type InputHTMLAttributes, type ReactNode } from 'react'
+import { forwardRef, type InputHTMLAttributes, type ReactNode, useId } from 'react'
 import {
-  type FormIntegrationProps,
-  type FormFieldError,
-  getErrorMessage,
   buildFieldRules,
+  type FormFieldError,
+  type FormIntegrationProps,
+  getErrorMessage,
   mergeRefs,
-} from './formUtils'
+} from '../../utils/formUtils'
 
 export interface InputProps
   extends Omit<InputHTMLAttributes<HTMLInputElement>, 'error' | 'required'>,

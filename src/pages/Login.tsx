@@ -1,16 +1,30 @@
-import { useForm, type SubmitHandler } from 'react-hook-form'
-import { AuthLayout } from '../layouts'
-import { Input, PasswordInput, Checkbox, Button, AuthPrompt } from '../components/ui'
-import type { LoginFormValues } from '../types'
-import { EMAIL_REGEX } from '../constants'
+import {useState} from 'react'
+import {Link} from 'react-router-dom'
+import {useForm} from 'react-hook-form'
+import {AuthLayout} from '../layouts/AuthLayout'
+import {Input} from '../components/ui/Input'
+import {PasswordInput} from '../components/ui/PasswordInput'
+import {Checkbox} from '../components/ui/Checkbox'
+import {Button} from '../components/ui/Button'
+import {AuthPrompt} from '../components/ui/AuthPrompt'
+import {EmailVerificationModal} from '../components/ui/EmailVerificationModal'
+import type {LoginFormValues} from '../types/auth'
+import {EMAIL_REGEX} from '../constants/auth'
+import authService from '../services/authService.ts'
+import toast from 'react-hot-toast'
+import {HttpStatusCode} from 'axios'
 
 export default function Login() {
+  const [showVerificationModal, setShowVerificationModal] = useState(false)
+  const [unverifiedEmail, setUnverifiedEmail] = useState('')
+
   const {
     register,
     handleSubmit,
+    setError,
+    resetField,
     formState: { errors, isSubmitting },
   } = useForm<LoginFormValues>({
-    mode: 'onTouched',
     defaultValues: {
       email: '',
       password: '',
@@ -18,15 +32,48 @@ export default function Login() {
     },
   })
 
-  const onSubmit: SubmitHandler<LoginFormValues> = async (data) => {
-    // Form is valid - print typed data to console (no API call per requirements)
-    const sanitizedData: LoginFormValues = {
+  async function onSubmit(data: LoginFormValues): Promise<void> {
+    const { success, error, payload, status } = await authService.orgLogin({
+      ...data,
       email: data.email.trim(),
-      password: data.password,
-      rememberMe: data.rememberMe,
+    })
+
+    if (success) {
+      console.log(payload)
+      toast.success('Login successfully!')
+      return
     }
 
-    console.log('Login submitted:', sanitizedData)
+    const errorCode: string | undefined = error?.code;
+
+    if (errorCode === 'INVALID_EMAIL') {
+      return setError('email', { message: 'Email is not registered!' })
+    }
+
+    if (errorCode === 'EMAIL_NOT_VERIFIED') {
+      setUnverifiedEmail(data.email.trim())
+      setShowVerificationModal(true)
+      return
+    }
+
+    if (status === HttpStatusCode.Unauthorized) {
+      toast.error('Invalid password!')
+      resetField('password')
+      setError('password', { message: 'Password is invalid!' })
+      return
+    }
+
+    toast.error(error?.message || 'Login failed.')
+  }
+
+  const handleResendVerification = async () => {
+    if (!unverifiedEmail) return
+    const res = await authService.resendVerificationEmail(unverifiedEmail)
+    if (res.success) {
+      toast.success('Verification email resent successfully!')
+    } else {
+      toast.error(res.error?.message || 'Failed to resend verification email.')
+    }
   }
 
   return (
@@ -83,16 +130,12 @@ export default function Login() {
             register={register}
           />
 
-          <a
-            href="#forgot-password"
-            onClick={(e) => {
-              e.preventDefault()
-              alert('Password reset functionality will be available in future releases.')
-            }}
+          <Link
+            to="/forgot-password"
             className="text-xs font-medium text-blue-600 hover:text-blue-700 hover:underline sm:text-sm"
           >
             Forgot password?
-          </a>
+          </Link>
         </div>
 
         <div className="pt-2">
@@ -107,6 +150,21 @@ export default function Login() {
           </Button>
         </div>
       </form>
+
+      <EmailVerificationModal
+        isOpen={showVerificationModal}
+        onClose={() => setShowVerificationModal(false)}
+        email={unverifiedEmail}
+        title="Email Not Verified"
+        description={
+          <p>
+            Your email is not verified. Please check your inbox and verify your account, or resend the verification link below.
+          </p>
+        }
+        primaryActionText="Close"
+        onPrimaryAction={() => setShowVerificationModal(false)}
+        onResend={handleResendVerification}
+      />
     </AuthLayout>
   )
 }

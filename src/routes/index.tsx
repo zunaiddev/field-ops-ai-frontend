@@ -1,7 +1,7 @@
 import { createBrowserRouter, Navigate, RouterProvider, type RouteObject } from 'react-router-dom'
 import Login from '../pages/Login'
 import Signup from '../pages/Signup'
-import { PublicRoute } from './guards'
+import PublicRoute from './guards/PublicRoute'
 
 const routes: RouteObject[] = [
   {
