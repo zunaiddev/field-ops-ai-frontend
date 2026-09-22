@@ -13,7 +13,9 @@ import {
 
 export const Dashboard: FC = () => {
   const { currentUser } = useCurrentUser()
-  const canManageStaff = currentUser.role !== 'EMPLOYEE'
+  const canManageStaff = ['OWNER', 'ORG_OWNER', 'ADMIN', 'ORG_ADMIN', 'MANAGER'].includes(
+    currentUser.role,
+  )
 
   return (
     <div className="space-y-6">

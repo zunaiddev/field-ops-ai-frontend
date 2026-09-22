@@ -3,6 +3,7 @@ import { Button } from '../components/ui/Button'
 import { Input } from '../components/ui/Input'
 import { Select } from '../components/ui/Select'
 import { useCurrentUser } from '../context/UserContext'
+import { EMPLOYEE_ROLE_OPTIONS } from '../constants/employee'
 
 export const Settings: FC = () => {
   const { currentUser } = useCurrentUser()
@@ -37,14 +38,19 @@ export const Settings: FC = () => {
                 label="Role Assignment"
                 value={currentUser.role}
                 disabled
-                options={[
-                  { value: 'OWNER', label: 'Owner' },
-                  { value: 'ADMIN', label: 'Administrator' },
-                  { value: 'MANAGER', label: 'Field Ops Manager' },
-                  { value: 'EMPLOYEE', label: 'Field Employee' },
-                ]}
+                options={EMPLOYEE_ROLE_OPTIONS.map((opt) => ({
+                  value: opt.value,
+                  label: opt.label,
+                }))}
               />
             </div>
+
+            {currentUser.employeeId && (
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                <Input label="Employee ID" defaultValue={currentUser.employeeId} disabled />
+                <Input label="Status" defaultValue={currentUser.status || 'ACTIVE'} disabled />
+              </div>
+            )}
 
             <div className="flex justify-end pt-2">
               <Button variant="primary" size="md">
@@ -63,8 +69,9 @@ export const Settings: FC = () => {
           <div className="mt-4 space-y-4">
             <Select
               label="Default Timezone"
-              defaultValue="America/New_York"
+              defaultValue={currentUser.timezone || 'Australia/Sydney'}
               options={[
+                { value: 'Australia/Sydney', label: 'Australia/Sydney (AEST/AEDT)' },
                 { value: 'America/New_York', label: 'Eastern Time (US/Eastern)' },
                 { value: 'America/Chicago', label: 'Central Time (US/Central)' },
                 { value: 'America/Denver', label: 'Mountain Time (US/Mountain)' },
@@ -74,9 +81,10 @@ export const Settings: FC = () => {
 
             <Select
               label="Currency"
-              defaultValue="USD"
+              defaultValue={currentUser.currency || 'USD'}
               options={[
                 { value: 'USD', label: 'USD ($) - US Dollar' },
+                { value: 'AUD', label: 'AUD ($) - Australian Dollar' },
                 { value: 'EUR', label: 'EUR (€) - Euro' },
                 { value: 'GBP', label: 'GBP (£) - British Pound' },
                 { value: 'CAD', label: 'CAD ($) - Canadian Dollar' },
@@ -86,7 +94,7 @@ export const Settings: FC = () => {
             <div className="rounded-lg bg-blue-50/70 p-3.5 text-xs text-blue-900 ring-1 ring-blue-700/10">
               <p className="font-semibold">Role-based Access Control Active</p>
               <p className="mt-1 text-blue-800">
-                You are currently previewing permissions as <strong>{currentUser.role}</strong>.
+                You are currently signed in as <strong>{currentUser.role}</strong>.
               </p>
             </div>
           </div>

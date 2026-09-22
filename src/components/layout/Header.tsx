@@ -10,7 +10,23 @@ interface HeaderProps {
 export const Header: FC<HeaderProps> = ({ onMenuToggle }) => {
   const { currentUser, setCurrentRole } = useCurrentUser()
 
-  const roles: UserRole[] = ['OWNER', 'ADMIN', 'MANAGER', 'EMPLOYEE']
+  const roles: { value: UserRole; label: string }[] = [
+    { value: 'ORG_OWNER', label: 'Owner (ORG_OWNER)' },
+    { value: 'ORG_ADMIN', label: 'Admin (ORG_ADMIN)' },
+    { value: 'MANAGER', label: 'Manager' },
+    { value: 'DISPATCHER', label: 'Dispatcher' },
+    { value: 'TECHNICIAN', label: 'Technician' },
+    { value: 'EMPLOYEE', label: 'Employee' },
+  ]
+
+  const userInitials =
+    (currentUser.name || currentUser.email || 'U')
+      .split(' ')
+      .filter(Boolean)
+      .map((n) => n[0])
+      .join('')
+      .toUpperCase()
+      .slice(0, 2) || 'U'
 
   return (
     <header className="sticky top-0 z-10 flex h-16 shrink-0 items-center justify-between border-b border-slate-200/80 bg-white/95 px-4 sm:px-6 lg:px-8 backdrop-blur-xs">
@@ -53,8 +69,8 @@ export const Header: FC<HeaderProps> = ({ onMenuToggle }) => {
             title="Switch mock role to preview role-based UI"
           >
             {roles.map((r) => (
-              <option key={r} value={r}>
-                {r}
+              <option key={r.value} value={r.value}>
+                {r.label}
               </option>
             ))}
           </select>
@@ -63,10 +79,7 @@ export const Header: FC<HeaderProps> = ({ onMenuToggle }) => {
         {/* User initials bubble */}
         <div className="flex items-center gap-2.5 border-l border-slate-200 pl-3">
           <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-blue-600 text-xs font-semibold text-white shadow-xs">
-            {currentUser.name
-              .split(' ')
-              .map((n) => n[0])
-              .join('')}
+            {userInitials}
           </div>
           <div className="hidden text-left xl:block">
             <p className="text-xs font-semibold text-slate-900 leading-none">{currentUser.name}</p>

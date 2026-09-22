@@ -49,6 +49,51 @@ export interface LoginResponse {
   id: string
   email: string
   accessToken: string
+  role?: string
+}
+
+export interface EmployeeProfileData {
+  id: string | number
+  employeeId?: string | number
+  firstName?: string
+  lastName?: string
+  email: string
+  status: string
+  phone?: string | null
+  role: string
+  emailVerifiedAt?: string | null
+  lastLoginAt?: string | null
+  createdAt?: string
+  updatedAt?: string
+}
+
+export interface OrganizationProfileData {
+  id: string | number
+  name: string
+  slug: string
+  status?: string
+  timezone?: string
+  currency?: string
+  createdAt?: string
+  updatedAt?: string
+}
+
+export interface EmployeeProfileResponse {
+  employee?: EmployeeProfileData
+  organization?: OrganizationProfileData
+  // Fallbacks in case flat structure is returned
+  id?: string | number
+  employeeId?: string | number
+  firstName?: string
+  lastName?: string
+  email?: string
+  status?: string
+  phone?: string | null
+  role?: string
+  emailVerifiedAt?: string | null
+  lastLoginAt?: string | null
+  createdAt?: string
+  updatedAt?: string
 }
 
 export type RefreshTokenResponse = LoginResponse

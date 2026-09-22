@@ -1,23 +1,25 @@
-import {useState} from 'react'
-import {Link, useNavigate} from 'react-router-dom'
-import {useForm} from 'react-hook-form'
-import {AuthLayout} from '../layouts/AuthLayout'
-import {Input} from '../components/ui/Input'
-import {PasswordInput} from '../components/ui/PasswordInput'
-import {Checkbox} from '../components/ui/Checkbox'
-import {Button} from '../components/ui/Button'
-import {AuthPrompt} from '../components/ui/AuthPrompt'
-import {EmailVerificationModal} from '../components/ui/EmailVerificationModal'
-import type {LoginFormValues} from '../types/auth'
-import {EMAIL_REGEX} from '../constants/auth'
+import { useState } from 'react'
+import { Link, useNavigate } from 'react-router-dom'
+import { useForm } from 'react-hook-form'
+import { AuthLayout } from '../layouts/AuthLayout'
+import { Input } from '../components/ui/Input'
+import { PasswordInput } from '../components/ui/PasswordInput'
+import { Checkbox } from '../components/ui/Checkbox'
+import { Button } from '../components/ui/Button'
+import { AuthPrompt } from '../components/ui/AuthPrompt'
+import { EmailVerificationModal } from '../components/ui/EmailVerificationModal'
+import type { LoginFormValues } from '../types/auth'
+import { EMAIL_REGEX } from '../constants/auth'
 import authService from '../services/authService.ts'
 import toast from 'react-hot-toast'
-import {HttpStatusCode} from 'axios'
+import { HttpStatusCode } from 'axios'
+import { useCurrentUser } from '../context/UserContext'
 
 export default function Login() {
   const [showVerificationModal, setShowVerificationModal] = useState(false)
   const [unverifiedEmail, setUnverifiedEmail] = useState('')
-  const navigate = useNavigate();
+  const navigate = useNavigate()
+  const { setUserFromAuth } = useCurrentUser()
 
   const {
     register,
@@ -39,14 +41,28 @@ export default function Login() {
       email: data.email.trim(),
     })
 
-    if (success) {
-      localStorage.setItem("token", payload?.accessToken as string);
-      toast.success('Login successfully!');
+    if (success && payload) {
+      localStorage.setItem('token', payload.accessToken)
+
+      // Fetch employee profile details from protected employee API
+      try {
+        const empRes = await authService.getEmployeeProfile()
+        if (empRes.success && empRes.payload) {
+          setUserFromAuth(payload, empRes.payload)
+        } else {
+          setUserFromAuth(payload, null)
+        }
+      } catch (err) {
+        console.error('Error fetching employee details:', err)
+        setUserFromAuth(payload, null)
+      }
+
+      toast.success('Logged in successfully!')
       navigate('/dashboard')
-      return;
+      return
     }
 
-    const errorCode: string | undefined = error?.code;
+    const errorCode: string | undefined = error?.code
 
     if (errorCode === 'INVALID_EMAIL') {
       return setError('email', { message: 'Email is not registered!' })

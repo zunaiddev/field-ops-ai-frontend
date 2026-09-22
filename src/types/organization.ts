@@ -17,6 +17,7 @@ export interface AddMemberDto {
     email: string;
     password: string;
     role: Exclude<OrganizationRole, 'ORG_OWNER'> | string;
+    phone?: string;
 }
 
 export interface UpdateMemberDto {
@@ -34,17 +35,18 @@ export interface EmployeeResponse {
 }
 
 export interface Employee {
-    id: string;
+    id: string | number;
+    employeeId?: string | number;
     firstName: string;
     lastName: string;
     email: string;
     status: string;
     role: string;
     phone?: string;
-    emailVerifiedAt: Date | null;
-    lastLoginAt: Date | null;
-    createdAt: Date;
-    updatedAt: Date;
+    emailVerifiedAt?: Date | string | null;
+    lastLoginAt?: Date | string | null;
+    createdAt?: Date | string;
+    updatedAt?: Date | string;
 }
 
 export interface Organization {

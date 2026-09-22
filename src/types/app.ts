@@ -1,14 +1,38 @@
 import type { FC } from 'react'
 
-export type UserRole = 'OWNER' | 'ADMIN' | 'MANAGER' | 'EMPLOYEE'
+export type UserRole =
+  | 'ORG_OWNER'
+  | 'ORG_ADMIN'
+  | 'OWNER'
+  | 'ADMIN'
+  | 'MANAGER'
+  | 'DISPATCHER'
+  | 'TECHNICIAN'
+  | 'INVENTORY_MANAGER'
+  | 'FINANCE'
+  | 'VIEWER'
+  | 'EMPLOYEE'
 
 export interface CurrentUser {
   id: string
+  employeeId?: string
   name: string
+  firstName?: string
+  lastName?: string
   email: string
   role: UserRole
   organizationName: string
+  organizationId?: string | number
+  organizationSlug?: string
+  timezone?: string
+  currency?: string
   avatarUrl?: string
+  status?: string
+  phone?: string | null
+  emailVerifiedAt?: string | null
+  lastLoginAt?: string | null
+  createdAt?: string
+  updatedAt?: string
 }
 
 export interface NavigationItem {

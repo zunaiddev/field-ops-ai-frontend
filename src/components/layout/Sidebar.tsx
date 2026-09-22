@@ -1,36 +1,41 @@
-import {type FC, useEffect} from 'react'
-import {NavLink, useLocation} from 'react-router-dom'
-import {FieldOpsLogo} from '../ui/FieldOpsLogo'
-import {useCurrentUser} from '../../context/UserContext'
-import {CloseIcon, CustomersIcon, DashboardIcon, EmployeesIcon, JobsIcon, LogoutIcon, SettingsIcon,} from '../icons'
-import type {NavigationItem, UserRole} from '../../types/app'
+import { type FC, useEffect } from 'react'
+import { NavLink, useLocation } from 'react-router-dom'
+import { FieldOpsLogo } from '../ui/FieldOpsLogo'
+import { useCurrentUser } from '../../context/UserContext'
+import {
+  CloseIcon,
+  CustomersIcon,
+  DashboardIcon,
+  EmployeesIcon,
+  JobsIcon,
+  LogoutIcon,
+  SettingsIcon,
+} from '../icons'
+import type { NavigationItem } from '../../types/app'
 
 export const navigationItems: NavigationItem[] = [
   {
     label: 'Dashboard',
     path: '/dashboard',
     icon: DashboardIcon,
-    roles: ['OWNER', 'ADMIN', 'MANAGER', 'EMPLOYEE'],
   },
   {
     label: 'Employees',
     path: '/employees',
     icon: EmployeesIcon,
-    roles: ['OWNER', 'ADMIN', 'MANAGER'], // Hidden from EMPLOYEE role
+    roles: ['OWNER', 'ORG_OWNER', 'ADMIN', 'ORG_ADMIN', 'MANAGER'],
     badge: '8',
   },
   {
     label: 'Customers',
     path: '/customers',
     icon: CustomersIcon,
-    roles: ['OWNER', 'ADMIN', 'MANAGER', 'EMPLOYEE'],
     badge: '7',
   },
   {
     label: 'Jobs',
     path: '/jobs',
     icon: JobsIcon,
-    roles: ['OWNER', 'ADMIN', 'MANAGER', 'EMPLOYEE'],
     badge: '6',
   },
 ]
@@ -65,12 +70,28 @@ export const Sidebar: FC<SidebarProps> = ({ isOpen, onClose }) => {
     (item) => !item.roles || item.roles.includes(currentUser.role),
   )
 
-  const roleBadgeStyles: Record<UserRole, string> = {
+  const roleBadgeStyles: Record<string, string> = {
     OWNER: 'bg-blue-50 text-blue-700 ring-blue-700/20',
+    ORG_OWNER: 'bg-blue-50 text-blue-700 ring-blue-700/20',
     ADMIN: 'bg-indigo-50 text-indigo-700 ring-indigo-700/20',
+    ORG_ADMIN: 'bg-indigo-50 text-indigo-700 ring-indigo-700/20',
     MANAGER: 'bg-violet-50 text-violet-700 ring-violet-700/20',
+    DISPATCHER: 'bg-teal-50 text-teal-700 ring-teal-700/20',
+    TECHNICIAN: 'bg-amber-50 text-amber-700 ring-amber-700/20',
+    INVENTORY_MANAGER: 'bg-emerald-50 text-emerald-700 ring-emerald-700/20',
+    FINANCE: 'bg-rose-50 text-rose-700 ring-rose-700/20',
+    VIEWER: 'bg-slate-100 text-slate-700 ring-slate-600/20',
     EMPLOYEE: 'bg-slate-100 text-slate-700 ring-slate-600/20',
   }
+
+  const userInitials =
+    (currentUser.name || currentUser.email || 'U')
+      .split(' ')
+      .filter(Boolean)
+      .map((n) => n[0])
+      .join('')
+      .toUpperCase()
+      .slice(0, 2) || 'U'
 
   const sidebarContent = (
     <div className="flex h-full flex-col justify-between bg-white">
@@ -118,16 +139,16 @@ export const Sidebar: FC<SidebarProps> = ({ isOpen, onClose }) => {
                 }
               >
                 {({ isActive }) => (
-                    <div className="flex items-center gap-3">
-                      <Icon
-                        className={`h-5 w-5 shrink-0 transition-colors ${
-                          isActive
-                            ? 'text-blue-600'
-                            : 'text-slate-400 group-hover:text-slate-600'
-                        }`}
-                      />
-                      <span>{item.label}</span>
-                    </div>
+                  <div className="flex items-center gap-3">
+                    <Icon
+                      className={`h-5 w-5 shrink-0 transition-colors ${
+                        isActive
+                          ? 'text-blue-600'
+                          : 'text-slate-400 group-hover:text-slate-600'
+                      }`}
+                    />
+                    <span>{item.label}</span>
+                  </div>
                 )}
               </NavLink>
             )
@@ -163,10 +184,7 @@ export const Sidebar: FC<SidebarProps> = ({ isOpen, onClose }) => {
         <div className="rounded-lg border border-slate-200/80 bg-slate-50/70 p-3">
           <div className="flex items-center gap-3">
             <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-blue-600 font-semibold text-xs text-white shadow-xs">
-              {currentUser.name
-                .split(' ')
-                .map((n) => n[0])
-                .join('')}
+              {userInitials}
             </div>
             <div className="min-w-0 flex-1">
               <p className="truncate text-xs font-semibold text-slate-900">
@@ -175,7 +193,7 @@ export const Sidebar: FC<SidebarProps> = ({ isOpen, onClose }) => {
               <div className="mt-0.5 flex items-center gap-1.5">
                 <span
                   className={`inline-flex items-center rounded px-1.5 py-0.2 text-[10px] font-medium ring-1 ${
-                    roleBadgeStyles[currentUser.role]
+                    roleBadgeStyles[currentUser.role] || roleBadgeStyles.EMPLOYEE
                   }`}
                 >
                   {currentUser.role}

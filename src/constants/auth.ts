@@ -1,5 +1,6 @@
 export const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
 export const SLUG_REGEX = /^[a-z0-9-]+$/
+export const PHONE_REGEX = /^\+?[0-9\s\-().]{7,20}$/
 
 export const COMMON_TIMEZONES = [
   { value: 'Australia/Sydney', label: 'Australia/Sydney (AEST/AEDT, UTC+10/+11)' },

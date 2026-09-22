@@ -1,5 +1,6 @@
 import type { ReactNode } from 'react'
 import { Navigate, Outlet } from 'react-router-dom'
+import { useCurrentUser } from '../../context/UserContext'
 
 export interface PublicRouteProps {
   children?: ReactNode
@@ -15,9 +16,24 @@ export interface PublicRouteProps {
 export default function PublicRoute({
   children,
   redirectPath = '/dashboard',
-  isAuthenticated = false, // Placeholder for auth context/state
+  isAuthenticated: propIsAuthenticated,
 }: PublicRouteProps) {
-  if (isAuthenticated) {
+  const { isAuthenticated: contextIsAuthenticated, isLoading } = useCurrentUser()
+
+  const isAuth = propIsAuthenticated !== undefined ? propIsAuthenticated : contextIsAuthenticated
+
+  if (isLoading && Boolean(localStorage.getItem('token'))) {
+    return (
+      <div className="flex h-screen w-full items-center justify-center bg-slate-50">
+        <div className="flex flex-col items-center gap-3">
+          <div className="h-8 w-8 animate-spin rounded-full border-3 border-blue-600 border-t-transparent" />
+          <p className="text-xs font-medium text-slate-500">Checking session...</p>
+        </div>
+      </div>
+    )
+  }
+
+  if (isAuth) {
     return <Navigate to={redirectPath} replace />
   }
 

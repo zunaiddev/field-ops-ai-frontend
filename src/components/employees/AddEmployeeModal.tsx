@@ -1,139 +1,83 @@
-import {type FC, useEffect, useState} from 'react'
+import {useForm} from 'react-hook-form'
+import toast from 'react-hot-toast'
+import {HttpStatusCode} from 'axios'
 import {Button} from '../ui/Button'
 import {Input} from '../ui/Input'
 import {PasswordInput} from '../ui/PasswordInput'
 import {Select} from '../ui/Select'
 import {CloseIcon} from '../icons'
-import type {AddMemberDto} from '../../types/organization'
+import type {AddMemberDto, Employee} from '../../types/organization'
 import {ADD_MEMBER_ROLE_OPTIONS} from '../../constants/employee'
-import {EMAIL_REGEX} from '../../constants/auth'
+import {EMAIL_REGEX, PHONE_REGEX} from '../../constants/auth'
+import dashboardService from '../../services/dashboardService'
 
 interface AddEmployeeModalProps {
   isOpen: boolean
   onClose: () => void
-  onAdd: (newEmployee: AddMemberDto) => Promise<boolean | void> | void
+  addEmployee: (employee: Employee) => void
 }
 
-export const AddEmployeeModal: FC<AddEmployeeModalProps> = ({ isOpen, onClose, onAdd }) => {
-  const [firstName, setFirstName] = useState('')
-  const [lastName, setLastName] = useState('')
-  const [email, setEmail] = useState('')
-  const [password, setPassword] = useState('')
-  const [role, setRole] = useState<string>('TECHNICIAN')
-  const [isSubmitting, setIsSubmitting] = useState(false)
-  const [errors, setErrors] = useState<Record<string, string>>({})
-
-  useEffect(() => {
-    if (!isOpen) return
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') handleClose()
-    }
-    window.addEventListener('keydown', handleKeyDown)
-    document.body.style.overflow = 'hidden'
-    return () => {
-      window.removeEventListener('keydown', handleKeyDown)
-      document.body.style.overflow = 'unset'
-    }
-  }, [isOpen])
-
-  const resetForm = () => {
-    setFirstName('')
-    setLastName('')
-    setEmail('')
-    setPassword('')
-    setRole('TECHNICIAN')
-    setErrors({})
-    setIsSubmitting(false)
-  }
+export function AddEmployeeModal({ isOpen, onClose, addEmployee }: AddEmployeeModalProps) {
+  const {
+    register,
+    handleSubmit,
+    reset,
+    setError,
+    formState: { errors, isSubmitting },
+  } = useForm<AddMemberDto>({
+    defaultValues: {
+      firstName: '',
+      lastName: '',
+      email: '',
+      phone: '',
+      password: '',
+      role: 'TECHNICIAN',
+    },
+  });
 
   const handleClose = () => {
-    resetForm()
+    reset()
     onClose()
   }
 
   if (!isOpen) return null
 
-  const validate = (): boolean => {
-    const newErrors: Record<string, string> = {}
-
-    const cleanFirst = firstName.trim()
-    if (!cleanFirst) {
-      newErrors.firstName = 'First name is required'
-    } else if (cleanFirst.length > 100) {
-      newErrors.firstName = 'First name cannot exceed 100 characters'
-    }
-
-    const cleanLast = lastName.trim()
-    if (!cleanLast) {
-      newErrors.lastName = 'Last name is required'
-    } else if (cleanLast.length > 100) {
-      newErrors.lastName = 'Last name cannot exceed 100 characters'
-    }
-
-    const cleanEmail = email.trim()
-    if (!cleanEmail) {
-      newErrors.email = 'Email is required'
-    } else if (!EMAIL_REGEX.test(cleanEmail)) {
-      newErrors.email = 'Please provide a valid email address'
-    } else if (cleanEmail.length > 255) {
-      newErrors.email = 'Email cannot exceed 255 characters'
-    }
-
-    if (!password) {
-      newErrors.password = 'Password is required'
-    } else if (password.length < 8) {
-      newErrors.password = 'Password must be at least 8 characters long'
-    } else if (password.length > 64) {
-      newErrors.password = 'Password cannot exceed 64 characters'
-    } else {
-      const hasUpper = /[A-Z]/.test(password)
-      const hasLower = /[a-z]/.test(password)
-      const hasNumber = /[0-9]/.test(password)
-      const hasSpecial = /[!@#$%^&*()_+\-=[\]{};':"\\|,.<>/?~`]/.test(password)
-
-      if (!hasUpper || !hasLower || !hasNumber || !hasSpecial) {
-        newErrors.password =
-          'Password must contain at least 1 uppercase letter, 1 lowercase letter, 1 number, and 1 special character'
-      }
-    }
-
-    if (!role || role === 'ORG_OWNER') {
-      newErrors.role = 'Role cannot be owner'
-    }
-
-    setErrors(newErrors)
-    return Object.keys(newErrors).length === 0
-  }
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
-    if (!validate()) return
-
-    setIsSubmitting(true)
+  const onSubmit = async (data: AddMemberDto) => {
     try {
-      const success = await onAdd({
-        firstName: firstName.trim(),
-        lastName: lastName.trim(),
-        email: email.trim(),
-        password,
-        role,
+      const response = await dashboardService.addMember({
+        firstName: data.firstName.trim(),
+        lastName: data.lastName.trim(),
+        email: data.email.trim(),
+        phone: data.phone?.trim() || undefined,
+        password: data.password,
+        role: data.role,
       })
 
-      if (success) handleClose()
-    } finally {
-      setIsSubmitting(false)
+      if (response.success && response.payload) {
+        toast.success('Member added successfully')
+        addEmployee(response.payload)
+        handleClose()
+        return
+      }
+
+      if (response.status === HttpStatusCode.Conflict) {
+        setError('email', { message: 'User already exists with email' })
+        return
+      }
+
+      toast.error(response.error?.message || 'Failed to add member')
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'An error occurred while adding member')
     }
   }
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6" role="dialog" aria-modal="true">
-      {/* Backdrop */}
       <div
         className="fixed inset-0 bg-slate-900/60 backdrop-blur-xs transition-opacity animate-in fade-in duration-200"
         onClick={handleClose}
       />
 
-      {/* Modal Dialog */}
       <div className="relative z-10 w-full max-w-lg transform overflow-hidden rounded-xl border border-slate-200 bg-white p-6 shadow-xl transition-all animate-in zoom-in-95 duration-200">
         <div className="flex items-center justify-between border-b border-slate-100 pb-4">
           <div>
@@ -150,28 +94,34 @@ export const AddEmployeeModal: FC<AddEmployeeModalProps> = ({ isOpen, onClose, o
           </button>
         </div>
 
-        <form onSubmit={handleSubmit} className="mt-4 space-y-4" noValidate>
+        <form onSubmit={handleSubmit(onSubmit)} className="mt-4 space-y-4" noValidate>
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             <Input
               label="First Name"
               placeholder="e.g. Liam"
               required="First name is required"
-              value={firstName}
-              error={errors.firstName ? { type: 'manual', message: errors.firstName } : undefined}
-              onChange={(e) => {
-                setFirstName(e.target.value)
-                if (errors.firstName) setErrors((prev) => ({ ...prev, firstName: '' }))
+              error={errors.firstName}
+              name="firstName"
+              register={register}
+              rules={{
+                maxLength: {
+                  value: 100,
+                  message: 'First name cannot exceed 100 characters',
+                },
               }}
             />
             <Input
               label="Last Name"
               placeholder="e.g. Vance"
               required="Last name is required"
-              value={lastName}
-              error={errors.lastName ? { type: 'manual', message: errors.lastName } : undefined}
-              onChange={(e) => {
-                setLastName(e.target.value)
-                if (errors.lastName) setErrors((prev) => ({ ...prev, lastName: '' }))
+              error={errors.lastName}
+              name="lastName"
+              register={register}
+              rules={{
+                maxLength: {
+                  value: 100,
+                  message: 'Last name cannot exceed 100 characters',
+                },
               }}
             />
           </div>
@@ -181,11 +131,41 @@ export const AddEmployeeModal: FC<AddEmployeeModalProps> = ({ isOpen, onClose, o
             type="email"
             placeholder="colleague@company.com"
             required="Email is required"
-            value={email}
-            error={errors.email ? { type: 'manual', message: errors.email } : undefined}
-            onChange={(e) => {
-              setEmail(e.target.value)
-              if (errors.email) setErrors((prev) => ({ ...prev, email: '' }))
+            error={errors.email}
+            name="email"
+            register={register}
+            rules={{
+              maxLength: {
+                value: 255,
+                message: 'Email cannot exceed 255 characters',
+              },
+              pattern: {
+                value: EMAIL_REGEX,
+                message: 'Please provide a valid email address',
+              },
+            }}
+          />
+
+          <Input
+            label="Phone Number"
+            type="tel"
+            placeholder="e.g. +91 98765 43210"
+            required="Phone number is required"
+            error={errors.phone}
+            name="phone"
+            register={register}
+            rules={{
+              validate: (value) => {
+                const trimmed = (value || '').trim()
+                if (!trimmed) {
+                  return 'Phone number is required'
+                }
+                const digitsOnly = trimmed.replace(/\D/g, '')
+                if (!PHONE_REGEX.test(trimmed) || digitsOnly.length < 7 || digitsOnly.length > 15) {
+                  return 'Please provide a valid phone number'
+                }
+                return true
+              },
             }}
           />
 
@@ -193,23 +173,46 @@ export const AddEmployeeModal: FC<AddEmployeeModalProps> = ({ isOpen, onClose, o
             label="Initial Password"
             placeholder="••••••••"
             required="Password is required"
-            value={password}
-            error={errors.password ? { type: 'manual', message: errors.password } : undefined}
+            error={errors.password}
             helperText="Must be at least 8 chars with uppercase, lowercase, number & symbol"
-            onChange={(e) => {
-              setPassword(e.target.value)
-              if (errors.password) setErrors((prev) => ({ ...prev, password: '' }))
+            name="password"
+            register={register}
+            rules={{
+              minLength: {
+                value: 8,
+                message: 'Password must be at least 8 characters long',
+              },
+              maxLength: {
+                value: 64,
+                message: 'Password cannot exceed 64 characters',
+              },
+              validate: (value) => {
+                const hasUpper = /[A-Z]/.test(value)
+                const hasLower = /[a-z]/.test(value)
+                const hasNumber = /[0-9]/.test(value)
+                const hasSpecial = /[!@#$%^&*()_+\-=[\]{};':"\\|,.<>/?~`]/.test(value)
+
+                if (!hasUpper || !hasLower || !hasNumber || !hasSpecial) {
+                  return 'Password must contain at least 1 uppercase letter, 1 lowercase letter, 1 number, and 1 special character'
+                }
+                return true
+              },
             }}
           />
 
           <div>
             <Select
               label="Organization Role"
-              value={role}
-              error={errors.role ? { type: 'manual', message: errors.role } : undefined}
-              onChange={(e) => {
-                setRole(e.target.value)
-                if (errors.role) setErrors((prev) => ({ ...prev, role: '' }))
+              error={errors.role}
+              name="role"
+              register={register}
+              rules={{
+                validate: (value) => {
+                  if (!value || value === 'ORG_OWNER') {
+                    return 'Role cannot be owner'
+                  }
+                  return true
+                },
               }}
               options={[...ADD_MEMBER_ROLE_OPTIONS]}
             />

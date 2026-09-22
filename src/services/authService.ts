@@ -1,6 +1,7 @@
 import {protectedApi, publicApi} from '../api/axios'
 import {ApiResponse} from '../api/ApiResponse'
 import type {
+  EmployeeProfileResponse,
   LoginFormValues,
   LoginPayload,
   LoginResponse,
@@ -34,6 +35,15 @@ class AuthService {
       return ApiResponse.success<LoginResponse>(response)
     } catch (error) {
       return ApiResponse.error<LoginResponse>(error)
+    }
+  }
+
+  async getEmployeeProfile(): Promise<ApiResponse<EmployeeProfileResponse>> {
+    try {
+      const response = await protectedApi.get<EmployeeProfileResponse>('/employees')
+      return ApiResponse.success<EmployeeProfileResponse>(response)
+    } catch (error) {
+      return ApiResponse.error<EmployeeProfileResponse>(error)
     }
   }
 

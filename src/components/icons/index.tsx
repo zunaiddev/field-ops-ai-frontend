@@ -351,3 +351,65 @@ export const EyeOffIcon: FC<IconProps> = ({
     <path d="M3.98 8.223A10.477 10.477 0 0 0 1.934 12C3.226 16.338 7.244 19.5 12 19.5c.993 0 1.953-.138 2.863-.395M6.228 6.228A10.451 10.451 0 0 1 12 4.5c4.756 0 8.773 3.162 10.065 7.498a10.522 10.522 0 0 1-4.293 5.774M6.228 6.228 3 3m3.228 3.228 3.65 3.65m7.894 7.894L21 21m-3.228-3.228-3.65-3.65m0 0a3 3 0 1 0-4.243-4.243m4.242 4.242L9.88 9.88" />
   </svg>
 )
+
+export const TrashIcon: FC<IconProps> = ({
+  className = 'h-4 w-4',
+  strokeWidth = 2,
+  ...props
+}) => (
+  <svg
+    className={className}
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth={strokeWidth}
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    aria-hidden="true"
+    {...props}
+  >
+    <path d="M3 6h18m-2 0v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6m3 0V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2m-6 5v6m4-6v6" />
+  </svg>
+)
+
+export const PencilIcon: FC<IconProps> = ({
+  className = 'h-4 w-4',
+  strokeWidth = 2,
+  ...props
+}) => (
+  <svg
+    className={className}
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth={strokeWidth}
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    aria-hidden="true"
+    {...props}
+  >
+    <path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z" />
+    <path d="m15 5 4 4" />
+  </svg>
+)
+
+export const MapPinIcon: FC<IconProps> = ({
+  className = 'h-4 w-4',
+  strokeWidth = 2,
+  ...props
+}) => (
+  <svg
+    className={className}
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth={strokeWidth}
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    aria-hidden="true"
+    {...props}
+  >
+    <path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z" />
+    <circle cx="12" cy="10" r="3" />
+  </svg>
+)

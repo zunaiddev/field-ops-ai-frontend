@@ -1,65 +1,88 @@
-import { useEffect, useState, type FC } from 'react'
-import { Button } from '../ui/Button'
-import { Input } from '../ui/Input'
-import { Select } from '../ui/Select'
-import { CloseIcon } from '../icons'
-import type { Customer, CustomerStatus } from '../../types/app'
+import {useForm} from 'react-hook-form'
+import toast from 'react-hot-toast'
+import {HttpStatusCode} from 'axios'
+import {Button} from '../ui/Button'
+import {Input} from '../ui/Input'
+import {Select} from '../ui/Select'
+import {CloseIcon} from '../icons'
+import type {CreateCustomerDto, Customer} from '../../types/customer'
+import {EMAIL_REGEX, PHONE_REGEX} from '../../constants/auth'
+import customerService from '../../services/customerService'
 
 interface AddCustomerModalProps {
   isOpen: boolean
   onClose: () => void
-  onAdd: (newCustomer: Omit<Customer, 'id' | 'totalJobs' | 'lastServiceDate'>) => void
+  addCustomer: (customer: Customer) => void
 }
 
-export const AddCustomerModal: FC<AddCustomerModalProps> = ({ isOpen, onClose, onAdd }) => {
-  const [name, setName] = useState('')
-  const [contactPerson, setContactPerson] = useState('')
-  const [email, setEmail] = useState('')
-  const [phone, setPhone] = useState('')
-  const [address, setAddress] = useState('')
-  const [city, setCity] = useState('')
-  const [state, setState] = useState('NY')
-  const [zipCode, setZipCode] = useState('')
-  const [status, setStatus] = useState<CustomerStatus>('ACTIVE')
+const CUSTOMER_STATUS_OPTIONS = [
+  { value: 'ACTIVE', label: 'Active Contract' },
+  { value: 'PENDING', label: 'Pending Verification' },
+  { value: 'INACTIVE', label: 'Inactive' },
+]
 
-  useEffect(() => {
-    if (!isOpen) return
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') onClose()
-    }
-    window.addEventListener('keydown', handleKeyDown)
-    document.body.style.overflow = 'hidden'
-    return () => {
-      window.removeEventListener('keydown', handleKeyDown)
-      document.body.style.overflow = 'unset'
-    }
-  }, [isOpen, onClose])
+export function AddCustomerModal({ isOpen, onClose, addCustomer }: AddCustomerModalProps) {
+  const {
+    register,
+    handleSubmit,
+    reset,
+    setError,
+    formState: { errors, isSubmitting },
+  } = useForm<CreateCustomerDto>({
+    defaultValues: {
+      name: '',
+      email: '',
+      phone: '',
+      externalReference: '',
+      status: 'ACTIVE',
+    },
+  });
+
+  const handleClose = () => {
+    reset()
+    onClose()
+  }
 
   if (!isOpen) return null
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault()
-    if (!name || !contactPerson || !email) return
+  const onSubmit = async (data: CreateCustomerDto) => {
+    try {
+      const response = await customerService.addCustomer({
+        name: data.name.trim(),
+        email: data.email.trim(),
+        phone: data.phone.trim(),
+        externalReference: data.externalReference?.trim() || undefined,
+        status: data.status,
+      })
 
-    onAdd({
-      name,
-      contactPerson,
-      email,
-      phone: phone || '+1 (555) 000-0000',
-      address: address || '100 Main St',
-      city: city || 'New York',
-      state: state || 'NY',
-      zipCode: zipCode || '10001',
-      status,
-    })
-    onClose()
+      if (response.success && response.payload) {
+        toast.success('Customer added successfully')
+        addCustomer(response.payload)
+        handleClose()
+        return
+      }
+
+      if (
+        response.status === HttpStatusCode.Conflict ||
+        response.error?.code === 'USER_ALREADY_EXISTS' ||
+        response.error?.code === 'CUSTOMER_ALREADY_EXISTS'
+      ) {
+        setError('email', { message: 'Email is already registered' })
+        toast.error('Customer already exists with email')
+        return
+      }
+
+      toast.error(response.error?.message || 'Failed to add customer')
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'An error occurred while adding customer')
+    }
   }
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6" role="dialog" aria-modal="true">
       <div
         className="fixed inset-0 bg-slate-900/60 backdrop-blur-xs transition-opacity animate-in fade-in duration-200"
-        onClick={onClose}
+        onClick={handleClose}
       />
 
       <div className="relative z-10 w-full max-w-lg transform overflow-hidden rounded-xl border border-slate-200 bg-white p-6 shadow-xl transition-all animate-in zoom-in-95 duration-200">
@@ -70,7 +93,7 @@ export const AddCustomerModal: FC<AddCustomerModalProps> = ({ isOpen, onClose, o
           </div>
           <button
             type="button"
-            onClick={onClose}
+            onClick={handleClose}
             aria-label="Close dialog"
             className="rounded-lg p-1.5 text-slate-400 hover:bg-slate-100 hover:text-slate-600 transition-colors"
           >
@@ -78,91 +101,95 @@ export const AddCustomerModal: FC<AddCustomerModalProps> = ({ isOpen, onClose, o
           </button>
         </div>
 
-        <form onSubmit={handleSubmit} className="mt-4 space-y-4">
+        <form onSubmit={handleSubmit(onSubmit)} className="mt-4 space-y-4" noValidate>
           <Input
             label="Organization / Company Name"
             placeholder="e.g. Horizon Logistics Center"
-            required
-            value={name}
-            onChange={(e) => setName(e.target.value)}
+            required="Customer name is required"
+            error={errors.name}
+            name="name"
+            register={register}
+            rules={{
+              maxLength: {
+                value: 150,
+                message: 'Name cannot exceed 150 characters',
+              },
+            }}
           />
-
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-            <Input
-              label="Primary Contact Person"
-              placeholder="e.g. Claire Davenport"
-              required
-              value={contactPerson}
-              onChange={(e) => setContactPerson(e.target.value)}
-            />
-            <Input
-              label="Contact Email"
-              type="email"
-              placeholder="contact@client.com"
-              required
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-            />
-          </div>
-
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-            <Input
-              label="Phone"
-              placeholder="+1 (555) 000-0000"
-              value={phone}
-              onChange={(e) => setPhone(e.target.value)}
-            />
-            <Select
-              label="Account Status"
-              value={status}
-              onChange={(e) => setStatus(e.target.value as CustomerStatus)}
-              options={[
-                { value: 'ACTIVE', label: 'Active Contract' },
-                { value: 'PENDING', label: 'Pending Verification' },
-                { value: 'INACTIVE', label: 'Inactive' },
-              ]}
-            />
-          </div>
 
           <Input
-            label="Street Address"
-            placeholder="e.g. 8800 Industrial Parkway"
-            value={address}
-            onChange={(e) => setAddress(e.target.value)}
+            label="Contact Email"
+            type="email"
+            placeholder="contact@client.com"
+            required="Email is required"
+            error={errors.email}
+            name="email"
+            register={register}
+            rules={{
+              maxLength: {
+                value: 255,
+                message: 'Email cannot exceed 255 characters',
+              },
+              pattern: {
+                value: EMAIL_REGEX,
+                message: 'Please provide a valid email address',
+              },
+            }}
           />
 
-          <div className="grid grid-cols-3 gap-3">
-            <div>
-              <Input
-                label="City"
-                placeholder="Jersey City"
-                value={city}
-                onChange={(e) => setCity(e.target.value)}
-              />
-            </div>
-            <div>
-              <Input
-                label="State"
-                placeholder="NJ"
-                value={state}
-                onChange={(e) => setState(e.target.value)}
-              />
-            </div>
-            <div>
-              <Input
-                label="Zip Code"
-                placeholder="07302"
-                value={zipCode}
-                onChange={(e) => setZipCode(e.target.value)}
-              />
-            </div>
+          <Input
+            label="Phone Number"
+            type="tel"
+            placeholder="e.g. +91 98765 43210"
+            required="Phone number is required"
+            error={errors.phone}
+            name="phone"
+            register={register}
+            rules={{
+              validate: (value) => {
+                const trimmed = (value || '').trim()
+                if (!trimmed) {
+                  return 'Phone number is required'
+                }
+                const digitsOnly = trimmed.replace(/\D/g, '')
+                if (!PHONE_REGEX.test(trimmed) || digitsOnly.length < 7 || digitsOnly.length > 15) {
+                  return 'Please provide a valid phone number'
+                }
+                return true
+              },
+            }}
+          />
+
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+            <Input
+              label="External Reference (optional)"
+              placeholder="e.g. EXT-1001"
+              error={errors.externalReference}
+              name="externalReference"
+              register={register}
+              rules={{
+                maxLength: {
+                  value: 100,
+                  message: 'External reference cannot exceed 100 characters',
+                },
+              }}
+            />
+
+            <Select
+              label="Account Status"
+              required="Status is required"
+              error={errors.status}
+              name="status"
+              register={register}
+              options={CUSTOMER_STATUS_OPTIONS}
+            />
           </div>
 
           <div className="mt-6 flex items-center justify-end gap-3 border-t border-slate-100 pt-4">
-            <Button variant="outline" size="md" onClick={onClose}>
+            <Button variant="outline" size="md" onClick={handleClose} disabled={isSubmitting}>
               Cancel
             </Button>
-            <Button variant="primary" size="md" type="submit">
+            <Button variant="primary" size="md" type="submit" isLoading={isSubmitting}>
               Create Customer
             </Button>
           </div>

@@ -2,6 +2,7 @@ import { createBrowserRouter, Navigate, RouterProvider, type RouteObject } from 
 import Login from '../pages/Login'
 import Signup from '../pages/Signup'
 import PublicRoute from './guards/PublicRoute'
+import ProtectedRoute from './guards/ProtectedRoute'
 import AppLayout from '../layouts/AppLayout'
 import Dashboard from '../pages/Dashboard'
 import Employees from '../pages/Employees'
@@ -30,7 +31,11 @@ const routes: RouteObject[] = [
   },
   {
     path: '/',
-    element: <AppLayout />,
+    element: (
+      <ProtectedRoute>
+        <AppLayout />
+      </ProtectedRoute>
+    ),
     children: [
       {
         index: true,

@@ -9,9 +9,8 @@ import {EmployeeDetailsModal} from '../components/employees/EmployeeDetailsModal
 import {EditEmployeeModal} from '../components/employees/EditEmployeeModal'
 import {PlusIcon, SearchIcon} from '../components/icons'
 import dashboardService from '../services/dashboardService'
-import type {AddMemberDto, Employee, UpdateMemberDto} from '../types/organization'
+import type {Employee} from '../types/organization'
 import {EMPLOYEE_ROLE_FILTER_OPTIONS, EMPLOYEE_STATUS_FILTER_OPTIONS} from '../constants/employee'
-import {HttpStatusCode} from "axios";
 
 export const Employees: FC = () => {
   const [loading, setLoading] = useState<boolean>(true)
@@ -46,7 +45,6 @@ export const Employees: FC = () => {
     fetchEmployees()
   }, [fetchEmployees])
 
-  // Filtered employees list
   const filteredEmployees = useMemo(() => {
     return employees.filter((emp) => {
       const query = searchQuery.toLowerCase().trim()
@@ -64,26 +62,8 @@ export const Employees: FC = () => {
     })
   }, [employees, searchQuery, roleFilter, statusFilter])
 
-  const handleAddEmployee = async (newEmployeeData: AddMemberDto) => {
-    try {
-      const response = await dashboardService.addMember(newEmployeeData)
-      if (response.success) {
-        toast.success('Member added successfully')
-        fetchEmployees()
-        return true;
-      } else {
-        if (response.status === HttpStatusCode.Conflict){
-          toast.error("User already exists with email");
-          return false;
-        }
-
-        toast.error(response.error?.message || 'Failed to add member')
-        return true;
-      }
-    } catch (err) {
-      toast.error(err instanceof Error ? err.message : 'An error occurred while adding member')
-      return true;
-    }
+  const handleAddEmployee = (newEmployee: Employee) => {
+    setEmployees((prev) => [newEmployee, ...prev])
   }
 
   const handleViewEmployee = (emp: Employee) => {
@@ -97,21 +77,11 @@ export const Employees: FC = () => {
     setIsEditModalOpen(true)
   }
 
-  const handleSaveEditEmployee = async (id: string, updatedData: UpdateMemberDto) => {
-    try {
-      const response = await dashboardService.updateMember(id, updatedData)
-      if (response.success) {
-        toast.success('Member updated successfully')
-        if (response.payload) {
-          setSelectedEmployee(response.payload)
-        }
-        fetchEmployees()
-      } else {
-        toast.error(response.error?.message || 'Failed to update member')
-      }
-    } catch (err) {
-      toast.error(err instanceof Error ? err.message : 'An error occurred while updating member')
-    }
+  const handleUpdateEmployee = (updatedEmployee: Employee) => {
+    setEmployees((prev) =>
+      prev.map((emp) => (emp.id === updatedEmployee.id ? updatedEmployee : emp))
+    )
+    setSelectedEmployee(updatedEmployee)
   }
 
   const handleDeleteEmployee = async (emp: Employee) => {
@@ -132,7 +102,6 @@ export const Employees: FC = () => {
 
   return (
     <div className="space-y-6">
-      {/* Page Header */}
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h1 className="text-xl font-bold tracking-tight text-slate-900 sm:text-2xl">
@@ -153,7 +122,6 @@ export const Employees: FC = () => {
         </Button>
       </div>
 
-      {/* Loading State */}
       {loading && (
         <div className="flex min-h-80 flex-col items-center justify-center rounded-xl border border-slate-200/80 bg-white p-12 text-center shadow-xs">
           <svg
@@ -182,7 +150,6 @@ export const Employees: FC = () => {
         </div>
       )}
 
-      {/* Error State */}
       {!loading && error && (
         <div className="rounded-xl border border-rose-200 bg-rose-50/60 p-8 text-center shadow-xs">
           <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-rose-100 text-rose-600">
@@ -216,13 +183,10 @@ export const Employees: FC = () => {
         </div>
       )}
 
-      {/* Success Content */}
       {!loading && !error && (
         <>
-          {/* Filter and Search Bar */}
           <div className="rounded-xl border border-slate-200/80 bg-white p-4 shadow-xs">
             <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
-              {/* Search Input */}
               <div className="sm:col-span-2">
                 <Input
                   placeholder="Search by name, email, phone..."
@@ -249,7 +213,6 @@ export const Employees: FC = () => {
               </div>
             </div>
 
-            {/* Results summary & Active filters pill */}
             <div className="mt-3 flex items-center justify-between border-t border-slate-100 pt-3 text-xs text-slate-500">
               <span>
                 Showing <strong className="text-slate-900">{filteredEmployees.length}</strong> of{' '}
@@ -271,7 +234,6 @@ export const Employees: FC = () => {
             </div>
           </div>
 
-          {/* Employee List Table */}
           <EmployeeTable
             employees={filteredEmployees}
             onViewEmployee={handleViewEmployee}
@@ -279,14 +241,12 @@ export const Employees: FC = () => {
         </>
       )}
 
-      {/* Add Employee Modal */}
       <AddEmployeeModal
         isOpen={isAddModalOpen}
         onClose={() => setIsAddModalOpen(false)}
-        onAdd={handleAddEmployee}
+        addEmployee={handleAddEmployee}
       />
 
-      {/* Employee Details Modal */}
       <EmployeeDetailsModal
         isOpen={isDetailModalOpen}
         employee={selectedEmployee}
@@ -298,7 +258,6 @@ export const Employees: FC = () => {
         onDelete={handleDeleteEmployee}
       />
 
-      {/* Edit Employee Modal */}
       <EditEmployeeModal
         isOpen={isEditModalOpen}
         employee={selectedEmployee}
@@ -306,7 +265,7 @@ export const Employees: FC = () => {
           setIsEditModalOpen(false)
           setSelectedEmployee(null)
         }}
-        onSave={handleSaveEditEmployee}
+        updateEmployee={handleUpdateEmployee}
       />
     </div>
   )
