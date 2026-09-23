@@ -98,6 +98,51 @@ export const JobsIcon: FC<IconProps> = ({
   </svg>
 )
 
+export const ServiceRequestIcon: FC<IconProps> = ({
+  className = 'h-5 w-5',
+  strokeWidth = 2,
+  ...props
+}) => (
+  <svg
+    className={className}
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth={strokeWidth}
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    aria-hidden="true"
+    {...props}
+  >
+    <path d="M9 5H7a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-2" />
+    <rect x="9" y="3" width="6" height="4" rx="1" />
+    <path d="m9 14 2 2 4-4" />
+  </svg>
+)
+
+export const TicketIcon: FC<IconProps> = ({
+  className = 'h-5 w-5',
+  strokeWidth = 2,
+  ...props
+}) => (
+  <svg
+    className={className}
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth={strokeWidth}
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    aria-hidden="true"
+    {...props}
+  >
+    <path d="M2 9a3 3 0 0 1 0 6v2a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-2a3 3 0 0 1 0-6V7a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2Z" />
+    <path d="M13 5v2" />
+    <path d="M13 17v2" />
+    <path d="M13 11v2" />
+  </svg>
+)
+
 export const SettingsIcon: FC<IconProps> = ({
   className = 'h-5 w-5',
   strokeWidth = 2,

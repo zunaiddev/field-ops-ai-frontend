@@ -9,6 +9,7 @@ import {
   EmployeesIcon,
   JobsIcon,
   LogoutIcon,
+  ServiceRequestIcon,
   SettingsIcon,
 } from '../icons'
 import type { NavigationItem } from '../../types/app'
@@ -31,6 +32,11 @@ export const navigationItems: NavigationItem[] = [
     path: '/customers',
     icon: CustomersIcon,
     badge: '7',
+  },
+  {
+    label: 'Service Requests',
+    path: '/service-requests',
+    icon: ServiceRequestIcon,
   },
   {
     label: 'Jobs',

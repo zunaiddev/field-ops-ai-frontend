@@ -7,6 +7,7 @@ import AppLayout from '../layouts/AppLayout'
 import Dashboard from '../pages/Dashboard'
 import Employees from '../pages/Employees'
 import Customers from '../pages/Customers'
+import ServiceRequests from '../pages/ServiceRequests'
 import Jobs from '../pages/Jobs'
 import Settings from '../pages/Settings'
 
@@ -52,6 +53,10 @@ const routes: RouteObject[] = [
       {
         path: 'customers',
         element: <Customers />,
+      },
+      {
+        path: 'service-requests',
+        element: <ServiceRequests />,
       },
       {
         path: 'jobs',
