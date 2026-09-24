@@ -11,6 +11,8 @@ import {
   LogoutIcon,
   ServiceRequestIcon,
   SettingsIcon,
+  SkillsIcon,
+  WrenchIcon,
 } from '../icons'
 import type { NavigationItem } from '../../types/app'
 
@@ -28,6 +30,11 @@ export const navigationItems: NavigationItem[] = [
     badge: '8',
   },
   {
+    label: 'Technicians',
+    path: '/technicians',
+    icon: WrenchIcon,
+  },
+  {
     label: 'Customers',
     path: '/customers',
     icon: CustomersIcon,
@@ -43,6 +50,11 @@ export const navigationItems: NavigationItem[] = [
     path: '/jobs',
     icon: JobsIcon,
     badge: '6',
+  },
+  {
+    label: 'Skills',
+    path: '/skills',
+    icon: SkillsIcon,
   },
 ]
 

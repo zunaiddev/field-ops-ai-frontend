@@ -6,9 +6,11 @@ import ProtectedRoute from './guards/ProtectedRoute'
 import AppLayout from '../layouts/AppLayout'
 import Dashboard from '../pages/Dashboard'
 import Employees from '../pages/Employees'
+import Technicians from '../pages/Technicians'
 import Customers from '../pages/Customers'
 import ServiceRequests from '../pages/ServiceRequests'
 import Jobs from '../pages/Jobs'
+import Skills from '../pages/Skills'
 import Settings from '../pages/Settings'
 
 const routes: RouteObject[] = [
@@ -51,6 +53,10 @@ const routes: RouteObject[] = [
         element: <Employees />,
       },
       {
+        path: 'technicians',
+        element: <Technicians />,
+      },
+      {
         path: 'customers',
         element: <Customers />,
       },
@@ -61,6 +67,10 @@ const routes: RouteObject[] = [
       {
         path: 'jobs',
         element: <Jobs />,
+      },
+      {
+        path: 'skills',
+        element: <Skills />,
       },
       {
         path: 'settings',

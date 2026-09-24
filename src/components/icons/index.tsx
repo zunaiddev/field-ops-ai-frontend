@@ -458,3 +458,48 @@ export const MapPinIcon: FC<IconProps> = ({
     <circle cx="12" cy="10" r="3" />
   </svg>
 )
+
+export const SkillsIcon: FC<IconProps> = ({
+  className = 'h-5 w-5',
+  strokeWidth = 2,
+  ...props
+}) => (
+  <svg
+    className={className}
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth={strokeWidth}
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    aria-hidden="true"
+    {...props}
+  >
+    <path d="m15.477 12.89 1.515 8.526a.5.5 0 0 1-.747.513L12 19.648l-4.245 2.281a.5.5 0 0 1-.747-.513l1.515-8.526" />
+    <circle cx="12" cy="8" r="6" />
+  </svg>
+)
+
+export const SparklesIcon: FC<IconProps> = ({
+  className = 'h-5 w-5',
+  strokeWidth = 2,
+  ...props
+}) => (
+  <svg
+    className={className}
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth={strokeWidth}
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    aria-hidden="true"
+    {...props}
+  >
+    <path d="M9.937 15.5A2 2 0 0 0 8.5 14.063l-6.135-1.582a.5.5 0 0 1 0-.962L8.5 9.936A2 2 0 0 0 9.937 8.5l1.582-6.135a.5.5 0 0 1 .963 0L14.063 8.5A2 2 0 0 0 15.5 9.937l6.135 1.581a.5.5 0 0 1 0 .964L15.5 14.063a2 2 0 0 0-1.437 1.437l-1.582 6.135a.5.5 0 0 1-.963 0z" />
+    <path d="M20 3v4" />
+    <path d="M22 5h-4" />
+    <path d="M4 17v2" />
+    <path d="M5 18H3" />
+  </svg>
+)
