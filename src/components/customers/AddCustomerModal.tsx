@@ -3,6 +3,7 @@ import toast from 'react-hot-toast'
 import {HttpStatusCode} from 'axios'
 import {Button} from '../ui/Button'
 import {Input} from '../ui/Input'
+import {PasswordInput} from '../ui/PasswordInput'
 import {Select} from '../ui/Select'
 import {CloseIcon} from '../icons'
 import type {CreateCustomerDto, Customer} from '../../types/customer'
@@ -33,6 +34,7 @@ export function AddCustomerModal({ isOpen, onClose, addCustomer }: AddCustomerMo
       name: '',
       email: '',
       phone: '',
+      password: '',
       externalReference: '',
       status: 'ACTIVE',
     },
@@ -51,6 +53,7 @@ export function AddCustomerModal({ isOpen, onClose, addCustomer }: AddCustomerMo
         name: data.name.trim(),
         email: data.email.trim(),
         phone: data.phone.trim(),
+        password: data.password,
         externalReference: data.externalReference?.trim() || undefined,
         status: data.status,
       })
@@ -154,6 +157,38 @@ export function AddCustomerModal({ isOpen, onClose, addCustomer }: AddCustomerMo
                 const digitsOnly = trimmed.replace(/\D/g, '')
                 if (!PHONE_REGEX.test(trimmed) || digitsOnly.length < 7 || digitsOnly.length > 15) {
                   return 'Please provide a valid phone number'
+                }
+                return true
+              },
+            }}
+          />
+
+          <PasswordInput
+            label="Password"
+            autoComplete="new-password"
+            placeholder="••••••••"
+            required="Password is required"
+            error={errors.password}
+            helperText="Must be at least 8 chars with uppercase, lowercase, number & symbol"
+            name="password"
+            register={register}
+            rules={{
+              minLength: {
+                value: 8,
+                message: 'Password must be at least 8 characters long',
+              },
+              maxLength: {
+                value: 64,
+                message: 'Password cannot exceed 64 characters',
+              },
+              validate: (value) => {
+                const hasUpper = /[A-Z]/.test(value)
+                const hasLower = /[a-z]/.test(value)
+                const hasNumber = /[0-9]/.test(value)
+                const hasSpecial = /[!@#$%^&*()_+\-=[\]{};':"\\|,.<>/?~`]/.test(value)
+
+                if (!hasUpper || !hasLower || !hasNumber || !hasSpecial) {
+                  return 'Password must contain at least 1 uppercase letter, 1 lowercase letter, 1 number, and 1 special character'
                 }
                 return true
               },

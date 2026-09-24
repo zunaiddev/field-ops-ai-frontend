@@ -1,19 +1,19 @@
-import { useState } from 'react'
-import { Link, useNavigate } from 'react-router-dom'
-import { useForm } from 'react-hook-form'
-import { AuthLayout } from '../layouts/AuthLayout'
-import { Input } from '../components/ui/Input'
-import { PasswordInput } from '../components/ui/PasswordInput'
-import { Checkbox } from '../components/ui/Checkbox'
-import { Button } from '../components/ui/Button'
-import { AuthPrompt } from '../components/ui/AuthPrompt'
-import { EmailVerificationModal } from '../components/ui/EmailVerificationModal'
-import type { LoginFormValues } from '../types/auth'
-import { EMAIL_REGEX } from '../constants/auth'
+import {useState} from 'react'
+import {Link, useNavigate} from 'react-router-dom'
+import {useForm} from 'react-hook-form'
+import {AuthLayout} from '../layouts/AuthLayout'
+import {Input} from '../components/ui/Input'
+import {PasswordInput} from '../components/ui/PasswordInput'
+import {Checkbox} from '../components/ui/Checkbox'
+import {Button} from '../components/ui/Button'
+import {AuthPrompt} from '../components/ui/AuthPrompt'
+import {EmailVerificationModal} from '../components/ui/EmailVerificationModal'
+import type {LoginFormValues} from '../types/auth'
+import {EMAIL_REGEX} from '../constants/auth'
 import authService from '../services/authService.ts'
 import toast from 'react-hot-toast'
-import { HttpStatusCode } from 'axios'
-import { useCurrentUser } from '../context/UserContext'
+import {HttpStatusCode} from 'axios'
+import {useCurrentUser} from '../context/UserContext'
 
 export default function Login() {
   const [showVerificationModal, setShowVerificationModal] = useState(false)
@@ -44,7 +44,6 @@ export default function Login() {
     if (success && payload) {
       localStorage.setItem('token', payload.accessToken)
 
-      // Fetch employee profile details from protected employee API
       try {
         const empRes = await authService.getEmployeeProfile()
         if (empRes.success && empRes.payload) {

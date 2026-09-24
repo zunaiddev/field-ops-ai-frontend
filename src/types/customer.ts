@@ -85,6 +85,7 @@ export interface CreateCustomerDto {
   name: string
   phone: string
   email: string
+  password: string
   externalReference?: string
   status: string
 }
