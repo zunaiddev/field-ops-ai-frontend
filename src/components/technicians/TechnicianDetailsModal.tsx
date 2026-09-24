@@ -22,6 +22,8 @@ interface TechnicianDetailsModalProps {
   technician: Technician | null
   onClose: () => void
   onAddressUpdated?: (technicianId: number, updatedAddress: TechnicianAddress) => void
+  onDeleteTechnician?: (technician: Technician) => Promise<void> | void
+  onUpdateStatus?: (technician: Technician) => void
 }
 
 function formatDate(dateValue: string | Date | null | undefined): string {
@@ -46,6 +48,8 @@ export const TechnicianDetailsModal: FC<TechnicianDetailsModalProps> = ({
   technician,
   onClose,
   onAddressUpdated,
+  onDeleteTechnician,
+  onUpdateStatus,
 }) => {
   const [skills, setSkills] = useState<Skill[]>([])
   const [isLoadingSkills, setIsLoadingSkills] = useState(false)
@@ -53,6 +57,10 @@ export const TechnicianDetailsModal: FC<TechnicianDetailsModalProps> = ({
   const [skillsError, setSkillsError] = useState<string | null>(null)
   const [isAssignSkillOpen, setIsAssignSkillOpen] = useState(false)
   const [removingSkillId, setRemovingSkillId] = useState<number | null>(null)
+
+  // Technician deletion confirmation state
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
+  const [isDeletingTechnician, setIsDeletingTechnician] = useState(false)
 
   // Active address being edited in the modal
   const [activeAddressToEdit, setActiveAddressToEdit] = useState<{
@@ -70,6 +78,8 @@ export const TechnicianDetailsModal: FC<TechnicianDetailsModalProps> = ({
       setActiveAddressToEdit(null)
       setIsAssignSkillOpen(false)
       setRemovingSkillId(null)
+      setShowDeleteConfirm(false)
+      setIsDeletingTechnician(false)
     }
   }, [isOpen, technician?.id])
 
@@ -77,7 +87,13 @@ export const TechnicianDetailsModal: FC<TechnicianDetailsModalProps> = ({
   useEffect(() => {
     if (!isOpen) return
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') onClose()
+      if (e.key === 'Escape') {
+        if (showDeleteConfirm) {
+          setShowDeleteConfirm(false)
+        } else {
+          onClose()
+        }
+      }
     }
     window.addEventListener('keydown', handleKeyDown)
     document.body.style.overflow = 'hidden'
@@ -85,7 +101,7 @@ export const TechnicianDetailsModal: FC<TechnicianDetailsModalProps> = ({
       window.removeEventListener('keydown', handleKeyDown)
       document.body.style.overflow = 'unset'
     }
-  }, [isOpen, onClose])
+  }, [isOpen, showDeleteConfirm, onClose])
 
   if (!isOpen || !technician) return null
 
@@ -158,6 +174,18 @@ export const TechnicianDetailsModal: FC<TechnicianDetailsModalProps> = ({
     setActiveAddressToEdit(null)
   }
 
+  const handleDeleteTechnician = async () => {
+    if (!onDeleteTechnician || !technician) return
+    setIsDeletingTechnician(true)
+    try {
+      await onDeleteTechnician(technician)
+      setShowDeleteConfirm(false)
+      onClose()
+    } finally {
+      setIsDeletingTechnician(false)
+    }
+  }
+
   const employee = technician.employee
   const employeeName =
     employee
@@ -194,7 +222,7 @@ export const TechnicianDetailsModal: FC<TechnicianDetailsModalProps> = ({
                 <WrenchIcon className="h-6 w-6" />
               </div>
               <div>
-                <div className="flex items-center gap-2">
+                <div className="flex flex-wrap items-center gap-2">
                   <h3 className="text-lg font-bold tracking-tight text-slate-900">
                     {employeeName}
                   </h3>
@@ -205,6 +233,8 @@ export const TechnicianDetailsModal: FC<TechnicianDetailsModalProps> = ({
                     className={`inline-flex items-center rounded-full px-2 py-0.5 text-[11px] font-semibold ${
                       technician.status === 'ACTIVE'
                         ? 'bg-emerald-50 text-emerald-700 ring-1 ring-emerald-600/20'
+                        : technician.status === 'SUSPENDED'
+                        ? 'bg-amber-50 text-amber-700 ring-1 ring-amber-600/20'
                         : 'bg-slate-100 text-slate-600 ring-1 ring-slate-600/10'
                     }`}
                   >
@@ -216,11 +246,25 @@ export const TechnicianDetailsModal: FC<TechnicianDetailsModalProps> = ({
                         ? 'bg-teal-50 text-teal-700 ring-1 ring-teal-600/20'
                         : technician.availabilityStatus === 'ON_JOB'
                         ? 'bg-amber-50 text-amber-700 ring-1 ring-amber-600/20'
+                        : technician.availabilityStatus === 'ON_BREAK'
+                        ? 'bg-blue-50 text-blue-700 ring-1 ring-blue-600/20'
                         : 'bg-rose-50 text-rose-700 ring-1 ring-rose-600/20'
                     }`}
                   >
                     {technician.availabilityStatus}
                   </span>
+
+                  {onUpdateStatus && (
+                    <button
+                      type="button"
+                      onClick={() => onUpdateStatus(technician)}
+                      className="inline-flex items-center gap-1 rounded bg-slate-100 px-2 py-0.5 text-[11px] font-semibold text-slate-700 hover:bg-blue-50 hover:text-blue-700 hover:border-blue-200 border border-slate-200 transition-colors cursor-pointer"
+                      title="Update Technician Status"
+                    >
+                      <PencilIcon className="h-3 w-3" />
+                      <span>Edit Status</span>
+                    </button>
+                  )}
                 </div>
                 <p className="mt-0.5 text-xs text-slate-500">
                   Organization #{technician.organizationId} • Joined {formatDate(technician.createdAt)}
@@ -237,6 +281,43 @@ export const TechnicianDetailsModal: FC<TechnicianDetailsModalProps> = ({
               <CloseIcon className="h-5 w-5" />
             </button>
           </div>
+
+          {/* Delete Confirmation Alert Banner */}
+          {showDeleteConfirm && (
+            <div className="border-b border-rose-200 bg-rose-50 p-4 transition-all animate-in fade-in slide-in-from-top-2">
+              <div className="flex items-start gap-3">
+                <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-rose-100 text-rose-600">
+                  <TrashIcon className="h-4 w-4" />
+                </div>
+                <div className="flex-1 text-xs">
+                  <p className="font-semibold text-rose-900">
+                    Are you sure you want to delete this technician?
+                  </p>
+                  <p className="mt-0.5 text-rose-700">
+                    This action will permanently delete &ldquo;{employeeName}&rdquo; (#{technician.id}) and unassign all related qualifications.
+                  </p>
+                  <div className="mt-3 flex items-center gap-2">
+                    <button
+                      type="button"
+                      onClick={handleDeleteTechnician}
+                      disabled={isDeletingTechnician}
+                      className="inline-flex items-center gap-1.5 rounded-md bg-rose-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-rose-700 shadow-xs transition-colors cursor-pointer disabled:opacity-50"
+                    >
+                      {isDeletingTechnician ? 'Deleting...' : 'Yes, Delete Technician'}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setShowDeleteConfirm(false)}
+                      disabled={isDeletingTechnician}
+                      className="rounded-md border border-slate-300 bg-white px-3 py-1.5 text-xs font-medium text-slate-700 hover:bg-slate-50 transition-colors cursor-pointer"
+                    >
+                      Cancel
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
 
           {/* Content Body */}
           <div className="overflow-y-auto p-6 space-y-6 flex-1">
@@ -567,10 +648,35 @@ export const TechnicianDetailsModal: FC<TechnicianDetailsModalProps> = ({
           </div>
 
           {/* Footer */}
-          <div className="flex items-center justify-end gap-2.5 border-t border-slate-100 bg-slate-50/75 px-6 py-4">
-            <Button variant="outline" size="sm" onClick={onClose}>
-              Close
-            </Button>
+          <div className="flex flex-col-reverse gap-2 border-t border-slate-100 bg-slate-50/75 px-6 py-4 sm:flex-row sm:items-center sm:justify-between">
+            <div>
+              {onDeleteTechnician && !showDeleteConfirm && (
+                <button
+                  type="button"
+                  onClick={() => setShowDeleteConfirm(true)}
+                  className="inline-flex items-center gap-1.5 rounded-lg px-3 py-2 text-xs font-medium text-rose-600 hover:bg-rose-50 hover:text-rose-700 transition-colors cursor-pointer"
+                >
+                  <TrashIcon className="h-4 w-4" />
+                  <span>Delete Technician</span>
+                </button>
+              )}
+            </div>
+
+            <div className="flex items-center justify-end gap-2.5">
+              {onUpdateStatus && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  leftIcon={<PencilIcon className="h-3.5 w-3.5" />}
+                  onClick={() => onUpdateStatus(technician)}
+                >
+                  Update Status
+                </Button>
+              )}
+              <Button variant="outline" size="sm" onClick={onClose}>
+                Close
+              </Button>
+            </div>
           </div>
         </div>
       </div>

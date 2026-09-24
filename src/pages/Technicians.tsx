@@ -1,14 +1,16 @@
-import { useState, useEffect, useCallback, useMemo, type FC } from 'react'
-import { Button } from '../components/ui/Button'
-import { Input } from '../components/ui/Input'
-import { Select } from '../components/ui/Select'
-import { PlusIcon, SearchIcon, WrenchIcon } from '../components/icons'
-import { TechnicianTable } from '../components/technicians/TechnicianTable'
-import { AddTechnicianModal } from '../components/technicians/AddTechnicianModal'
-import { TechnicianDetailsModal } from '../components/technicians/TechnicianDetailsModal'
-import { UpdateAddressModal } from '../components/technicians/UpdateAddressModal'
+import {type FC, useCallback, useEffect, useMemo, useState} from 'react'
+import toast from 'react-hot-toast'
+import {Button} from '../components/ui/Button'
+import {Input} from '../components/ui/Input'
+import {Select} from '../components/ui/Select'
+import {PlusIcon, SearchIcon, WrenchIcon} from '../components/icons'
+import {TechnicianTable} from '../components/technicians/TechnicianTable'
+import {AddTechnicianModal} from '../components/technicians/AddTechnicianModal'
+import {TechnicianDetailsModal} from '../components/technicians/TechnicianDetailsModal'
+import {UpdateAddressModal} from '../components/technicians/UpdateAddressModal'
+import {UpdateStatusModal} from '../components/technicians/UpdateStatusModal'
 import technicianService from '../services/technicianService'
-import type { Technician, TechnicianAddress } from '../types/technician'
+import type {Technician, TechnicianAddress} from '../types/technician'
 
 const STATUS_FILTER_OPTIONS = [
   { value: 'ALL', label: 'All Statuses' },
@@ -35,6 +37,7 @@ export const Technicians: FC = () => {
   const [isAddModalOpen, setIsAddModalOpen] = useState(false)
   const [selectedTechnician, setSelectedTechnician] = useState<Technician | null>(null)
   const [isDetailsModalOpen, setIsDetailsModalOpen] = useState(false)
+  const [editingStatusTech, setEditingStatusTech] = useState<Technician | null>(null)
   const [tableEditingAddress, setTableEditingAddress] = useState<{
     technicianId: number
     address: TechnicianAddress
@@ -100,6 +103,63 @@ export const Technicians: FC = () => {
   const handleViewTechnician = (tech: Technician) => {
     setSelectedTechnician(tech)
     setIsDetailsModalOpen(true)
+  }
+
+  // Handle Delete Technician
+  const handleDeleteTechnician = async (tech: Technician) => {
+    try {
+      const res = await technicianService.deleteTechnician(tech.id)
+      if (res.success) {
+        const emp = tech.employee
+        const techName = emp
+          ? `${emp.firstName || ''} ${emp.lastName || ''}`.trim() || emp.email
+          : `#${tech.id}`
+        toast.success(`Technician "${techName}" deleted successfully`)
+        setTechnicians((prev) => prev.filter((t) => t.id !== tech.id))
+        if (selectedTechnician?.id === tech.id) {
+          setIsDetailsModalOpen(false)
+          setSelectedTechnician(null)
+        }
+      } else {
+        toast.error(res.error?.message || 'Failed to delete technician')
+      }
+    } catch (err) {
+      toast.error(
+        err instanceof Error ? err.message : 'An error occurred while deleting technician',
+      )
+    }
+  }
+
+  // Handle In-Memory Status & Availability Update
+  const handleStatusUpdated = (updatedPartial: {
+    id: number
+    status: string
+    availabilityStatus: string
+    updatedAt?: string
+  }) => {
+    // 1. Update the technician list state
+    setTechnicians((prev) =>
+      prev.map((t) => {
+        if (t.id !== updatedPartial.id) return t
+        return {
+          ...t,
+          status: updatedPartial.status,
+          availabilityStatus: updatedPartial.availabilityStatus,
+          updatedAt: updatedPartial.updatedAt || t.updatedAt,
+        }
+      }),
+    )
+
+    // 2. Also update the selected technician currently open in the details modal
+    setSelectedTechnician((prev) => {
+      if (!prev || prev.id !== updatedPartial.id) return prev
+      return {
+        ...prev,
+        status: updatedPartial.status,
+        availabilityStatus: updatedPartial.availabilityStatus,
+        updatedAt: updatedPartial.updatedAt || prev.updatedAt,
+      }
+    })
   }
 
   // Handle In-Memory Address Update without refetching from server
@@ -174,7 +234,8 @@ export const Technicians: FC = () => {
             disabled={loading}
             title="Reload technicians from server"
           >
-            <svg
+            <div className="flex gap-2">
+              <svg
               className={`h-4 w-4 ${loading ? 'animate-spin text-blue-600' : 'text-slate-600'}`}
               fill="none"
               viewBox="0 0 24 24"
@@ -188,6 +249,8 @@ export const Technicians: FC = () => {
               />
             </svg>
             <span className="hidden sm:inline">Refresh</span>
+            </div>
+
           </Button>
 
           <Button
@@ -327,6 +390,8 @@ export const Technicians: FC = () => {
             })
           }
           onAddNewTechnician={() => setIsAddModalOpen(true)}
+          onDeleteTechnician={handleDeleteTechnician}
+          onUpdateStatus={(tech) => setEditingStatusTech(tech)}
         />
       )}
 
@@ -337,7 +402,7 @@ export const Technicians: FC = () => {
         onTechnicianCreated={handleTechnicianCreated}
       />
 
-      {/* Technician Details Modal with Address Update */}
+      {/* Technician Details Modal with Address Update & Delete Technician & Update Status */}
       <TechnicianDetailsModal
         isOpen={isDetailsModalOpen}
         technician={selectedTechnician}
@@ -346,9 +411,11 @@ export const Technicians: FC = () => {
           setSelectedTechnician(null)
         }}
         onAddressUpdated={handleAddressUpdated}
+        onDeleteTechnician={handleDeleteTechnician}
+        onUpdateStatus={(tech) => setEditingStatusTech(tech)}
       />
 
-      {/* Update Address Modal (Quick edit from Table) */}
+      {/* Update Address Modal (Quick edit from Table or Details) */}
       {tableEditingAddress && (
         <UpdateAddressModal
           isOpen={Boolean(tableEditingAddress)}
@@ -359,6 +426,19 @@ export const Technicians: FC = () => {
           onAddressUpdated={(updatedAddr) => {
             handleAddressUpdated(tableEditingAddress.technicianId, updatedAddr)
             setTableEditingAddress(null)
+          }}
+        />
+      )}
+
+      {/* Update Status & Availability Modal */}
+      {editingStatusTech && (
+        <UpdateStatusModal
+          isOpen={Boolean(editingStatusTech)}
+          technician={editingStatusTech}
+          onClose={() => setEditingStatusTech(null)}
+          onStatusUpdated={(updatedPartial) => {
+            handleStatusUpdated(updatedPartial)
+            setEditingStatusTech(null)
           }}
         />
       )}

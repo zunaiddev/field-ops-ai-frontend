@@ -29,6 +29,11 @@ export interface Technician {
   skills?: Skill[]
 }
 
+export interface UpdateTechnicianStatusDto {
+  status: string
+  availabilityStatus: string
+}
+
 export interface CreateTechnicianAddressDto {
   addressLine1: string
   addressLine2?: string

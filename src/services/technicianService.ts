@@ -6,6 +6,7 @@ import type {
   Technician,
   TechnicianAddress,
   UpdateTechnicianAddressDto,
+  UpdateTechnicianStatusDto,
 } from '../types/technician'
 import type { Skill } from '../types/skill'
 
@@ -55,6 +56,34 @@ class TechnicianService {
       })
     } catch (err) {
       return ApiResponse.error<Technician>(err)
+    }
+  }
+
+  async updateTechnicianStatus(
+    technicianId: number | string,
+    payload: UpdateTechnicianStatusDto,
+  ): Promise<ApiResponse<Technician>> {
+    try {
+      const response: AxiosResponse = await protectedApi.patch(
+        `/technicians/${technicianId}`,
+        payload,
+      )
+      const data: Technician = response.data?.data || response.data
+      return ApiResponse.success<Technician>({
+        ...response,
+        data,
+      })
+    } catch (err) {
+      return ApiResponse.error<Technician>(err)
+    }
+  }
+
+  async deleteTechnician(id: number | string): Promise<ApiResponse<void>> {
+    try {
+      const response: AxiosResponse = await protectedApi.delete(`/technicians/${id}`)
+      return ApiResponse.success<void>(response)
+    } catch (err) {
+      return ApiResponse.error<void>(err)
     }
   }
 
