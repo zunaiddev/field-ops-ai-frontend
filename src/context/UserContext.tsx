@@ -3,7 +3,9 @@ import toast from 'react-hot-toast'
 import { mockCurrentUser } from '../constants/mockData'
 import type { CurrentUser, UserRole } from '../types/app'
 import type { EmployeeProfileResponse, LoginResponse } from '../types/auth'
+import type { CustomerProfile } from '../types/publicCustomer'
 import authService from '../services/authService'
+import customerPortalService from '../services/customerPortalService'
 
 export interface UserContextType {
   currentUser: CurrentUser
@@ -14,6 +16,10 @@ export interface UserContextType {
   setUserFromAuth: (
     loginData: LoginResponse,
     employeeData?: EmployeeProfileResponse | null,
+  ) => CurrentUser
+  setCustomerFromAuth: (
+    loginData: LoginResponse,
+    customerData?: CustomerProfile | null,
   ) => CurrentUser
   fetchCurrentUser: () => Promise<CurrentUser | null>
   logout: () => Promise<void>
@@ -48,7 +54,7 @@ export function buildCurrentUser(
     name = 'User'
   }
 
-  const role = (emp?.role || loginData?.role || previousUser?.role || 'ORG_OWNER') as UserRole
+  const role = (loginData?.role || emp?.role || previousUser?.role || 'ORG_OWNER') as UserRole
   const organizationName =
     org?.name || previousUser?.organizationName || 'FieldOps Organization'
   const organizationId = org?.id ?? previousUser?.organizationId
@@ -116,21 +122,52 @@ export function UserProvider({ children }: { children: ReactNode }) {
     }
 
     try {
-      const response = await authService.getEmployeeProfile()
-      if (response.success && response.payload) {
-        const updated = buildCurrentUser(response.payload, null, currentUser)
-        setCurrentUser(updated)
-        setIsAuthenticated(true)
-        localStorage.setItem(USER_STORAGE_KEY, JSON.stringify(updated))
-        return updated
-      } else if (response.status === 401) {
-        localStorage.removeItem('token')
-        localStorage.removeItem(USER_STORAGE_KEY)
-        setIsAuthenticated(false)
-        return null
+      if (currentUser?.role === 'CUSTOMER') {
+        const response = await customerPortalService.getProfile()
+        if (response.success && response.payload) {
+          const cust = response.payload
+          const updated: CurrentUser = {
+            id: String(cust.id),
+            name: cust.name,
+            email: cust.email,
+            phone: cust.phone,
+            role: 'CUSTOMER',
+            organizationName: cust.organization?.name || currentUser.organizationName,
+            organizationId: cust.organizationId,
+            organizationSlug: cust.organization?.slug,
+            timezone: cust.organization?.timezone,
+            currency: cust.organization?.currency,
+            status: cust.status || 'ACTIVE',
+            createdAt: cust.createdAt,
+            updatedAt: cust.updatedAt,
+          }
+          setCurrentUser(updated)
+          setIsAuthenticated(true)
+          localStorage.setItem(USER_STORAGE_KEY, JSON.stringify(updated))
+          return updated
+        } else if (response.status === 401) {
+          localStorage.removeItem('token')
+          localStorage.removeItem(USER_STORAGE_KEY)
+          setIsAuthenticated(false)
+          return null
+        }
+      } else {
+        const response = await authService.getEmployeeProfile()
+        if (response.success && response.payload) {
+          const updated = buildCurrentUser(response.payload, null, currentUser)
+          setCurrentUser(updated)
+          setIsAuthenticated(true)
+          localStorage.setItem(USER_STORAGE_KEY, JSON.stringify(updated))
+          return updated
+        } else if (response.status === 401) {
+          localStorage.removeItem('token')
+          localStorage.removeItem(USER_STORAGE_KEY)
+          setIsAuthenticated(false)
+          return null
+        }
       }
     } catch (err) {
-      console.error('Failed to fetch employee details:', err)
+      console.error('Failed to fetch user details:', err)
     } finally {
       setIsLoading(false)
     }
@@ -168,7 +205,33 @@ export function UserProvider({ children }: { children: ReactNode }) {
     return user
   }
 
+  const setCustomerFromAuth = (
+    loginData: LoginResponse,
+    customerData?: CustomerProfile | null,
+  ): CurrentUser => {
+    const updated: CurrentUser = {
+      id: String(customerData?.id || loginData.id),
+      name: customerData?.name || loginData.email.split('@')[0],
+      email: customerData?.email || loginData.email,
+      phone: customerData?.phone ?? null,
+      role: 'CUSTOMER',
+      organizationName: customerData?.organization?.name || 'Customer Account',
+      organizationId: customerData?.organizationId,
+      organizationSlug: customerData?.organization?.slug,
+      timezone: customerData?.organization?.timezone,
+      currency: customerData?.organization?.currency,
+      status: customerData?.status || 'ACTIVE',
+      createdAt: customerData?.createdAt,
+      updatedAt: customerData?.updatedAt,
+    }
+    setCurrentUser(updated)
+    setIsAuthenticated(true)
+    localStorage.setItem(USER_STORAGE_KEY, JSON.stringify(updated))
+    return updated
+  }
+
   const logout = async () => {
+    const isCustomer = currentUser?.role === 'CUSTOMER'
     try {
       const response = await authService.logout()
       if (response.success) {
@@ -184,7 +247,7 @@ export function UserProvider({ children }: { children: ReactNode }) {
       localStorage.removeItem(USER_STORAGE_KEY)
       sessionStorage.removeItem('token')
       setIsAuthenticated(false)
-      window.location.href = '/auth/login'
+      window.location.href = isCustomer ? '/login' : '/login/employee'
     }
   }
 
@@ -197,6 +260,7 @@ export function UserProvider({ children }: { children: ReactNode }) {
         setCurrentRole,
         setCurrentUser,
         setUserFromAuth,
+        setCustomerFromAuth,
         fetchCurrentUser,
         logout,
       }}

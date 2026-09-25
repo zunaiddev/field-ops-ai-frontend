@@ -3,6 +3,7 @@ import type {AxiosError, AxiosResponse} from 'axios'
 export interface ApiErrorDetails {
   message: string
   code: string
+  errorCode?: string
 }
 
 export class ApiResponse<T = unknown> {

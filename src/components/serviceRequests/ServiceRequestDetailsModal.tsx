@@ -258,8 +258,7 @@ export const ServiceRequestDetailsModal: FC<ServiceRequestDetailsModalProps> = (
     label: request.source,
   }
 
-  const isEmployeeSource =
-    request.source?.toUpperCase() === 'EMPLOYEE' || Boolean(request.createdBy)
+  const isEmployeeSource = request.source?.toUpperCase() === 'EMPLOYEE'
 
   return (
     <div

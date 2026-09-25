@@ -14,6 +14,7 @@ import {
 import type { Technician, TechnicianAddress } from '../../types/technician'
 import type { Skill } from '../../types/skill'
 import technicianService from '../../services/technicianService'
+import { useAlertModal } from '../../context/AlertModalContext'
 import { UpdateAddressModal } from './UpdateAddressModal'
 import { AssignSkillModal } from './AssignSkillModal'
 
@@ -51,6 +52,7 @@ export const TechnicianDetailsModal: FC<TechnicianDetailsModalProps> = ({
   onDeleteTechnician,
   onUpdateStatus,
 }) => {
+  const { confirm } = useAlertModal()
   const [skills, setSkills] = useState<Skill[]>([])
   const [isLoadingSkills, setIsLoadingSkills] = useState(false)
   const [skillsLoaded, setSkillsLoaded] = useState(false)
@@ -137,13 +139,14 @@ export const TechnicianDetailsModal: FC<TechnicianDetailsModalProps> = ({
 
   // Handle remove skill via DELETE /technicians/:id/skills/:skillId
   const handleRemoveSkill = async (skill: Skill) => {
-    if (
-      !window.confirm(
-        `Are you sure you want to remove "${skill.name}" from this technician?`,
-      )
-    ) {
-      return
-    }
+    const confirmed = await confirm({
+      title: "Remove Skill",
+      message: `Are you sure you want to remove "${skill.name}" from this technician?`,
+      confirmText: "Remove",
+      cancelText: "Cancel",
+      variant: "danger",
+    })
+    if (!confirmed) return
 
     setRemovingSkillId(skill.id)
     try {

@@ -3,15 +3,22 @@ import Login from '../pages/Login'
 import Signup from '../pages/Signup'
 import PublicRoute from './guards/PublicRoute'
 import ProtectedRoute from './guards/ProtectedRoute'
+import EmployeeRoute from './guards/EmployeeRoute'
 import AppLayout from '../layouts/AppLayout'
-import Dashboard from '../pages/Dashboard'
 import Employees from '../pages/Employees'
 import Technicians from '../pages/Technicians'
 import Customers from '../pages/Customers'
 import ServiceRequests from '../pages/ServiceRequests'
-import Jobs from '../pages/Jobs'
 import Skills from '../pages/Skills'
 import Settings from '../pages/Settings'
+
+function RootRedirect() {
+  return <Navigate to="/service-requests" replace />
+}
+
+function FallbackRedirect() {
+  return <Navigate to="/service-requests" replace />
+}
 
 const routes: RouteObject[] = [
   {
@@ -24,11 +31,37 @@ const routes: RouteObject[] = [
       },
       {
         path: 'login',
-        element: <Login />,
+        element: <Login mode="customer" />,
+      },
+      {
+        path: 'login/employee',
+        element: <Login mode="employee" />,
+      },
+      {
+        path: 'login/customer',
+        element: <Navigate to="/auth/login" replace />,
       },
       {
         path: 'signup',
         element: <Signup />,
+      },
+    ],
+  },
+  {
+    path: '/login',
+    element: <PublicRoute />,
+    children: [
+      {
+        index: true,
+        element: <Login mode="customer" />,
+      },
+      {
+        path: 'employee',
+        element: <Login mode="employee" />,
+      },
+      {
+        path: 'customer',
+        element: <Navigate to="/login" replace />,
       },
     ],
   },
@@ -42,35 +75,47 @@ const routes: RouteObject[] = [
     children: [
       {
         index: true,
-        element: <Navigate to="/dashboard" replace />,
-      },
-      {
-        path: 'dashboard',
-        element: <Dashboard />,
+        element: <RootRedirect />,
       },
       {
         path: 'employees',
-        element: <Employees />,
+        element: (
+          <EmployeeRoute>
+            <Employees />
+          </EmployeeRoute>
+        ),
       },
       {
         path: 'technicians',
-        element: <Technicians />,
+        element: (
+          <EmployeeRoute>
+            <Technicians />
+          </EmployeeRoute>
+        ),
       },
       {
         path: 'customers',
-        element: <Customers />,
+        element: (
+          <EmployeeRoute>
+            <Customers />
+          </EmployeeRoute>
+        ),
       },
       {
         path: 'service-requests',
         element: <ServiceRequests />,
       },
       {
-        path: 'jobs',
-        element: <Jobs />,
+        path: 'services',
+        element: <Navigate to="/service-requests" replace />,
       },
       {
         path: 'skills',
-        element: <Skills />,
+        element: (
+          <EmployeeRoute>
+            <Skills />
+          </EmployeeRoute>
+        ),
       },
       {
         path: 'settings',
@@ -80,7 +125,7 @@ const routes: RouteObject[] = [
   },
   {
     path: '*',
-    element: <Navigate to="/dashboard" replace />,
+    element: <FallbackRedirect />,
   },
 ]
 

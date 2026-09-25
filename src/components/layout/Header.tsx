@@ -9,8 +9,10 @@ interface HeaderProps {
 
 export const Header: FC<HeaderProps> = ({ onMenuToggle }) => {
   const { currentUser, setCurrentRole } = useCurrentUser()
+  const isCustomer = currentUser.role === 'CUSTOMER'
 
   const roles: { value: UserRole; label: string }[] = [
+    { value: 'CUSTOMER', label: 'Customer' },
     { value: 'ORG_OWNER', label: 'Owner (ORG_OWNER)' },
     { value: 'ORG_ADMIN', label: 'Admin (ORG_ADMIN)' },
     { value: 'MANAGER', label: 'Manager' },
@@ -49,32 +51,34 @@ export const Header: FC<HeaderProps> = ({ onMenuToggle }) => {
           </div>
           <span className="inline-flex items-center rounded-md bg-emerald-50 px-2 py-1 text-[11px] font-medium text-emerald-700 ring-1 ring-emerald-600/20">
             <span className="mr-1.5 h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse" />
-            Live Ops
+            {isCustomer ? 'Customer Portal' : 'Live Ops'}
           </span>
         </div>
       </div>
 
       {/* Right controls: Role switcher & User status */}
       <div className="flex items-center gap-3">
-        {/* Role Preview Switcher (UI tester) */}
-        <div className="flex items-center gap-2">
-          <label htmlFor="role-select" className="text-xs font-medium text-slate-500 hidden md:inline">
-            Role Preview:
-          </label>
-          <select
-            id="role-select"
-            value={currentUser.role}
-            onChange={(e) => setCurrentRole(e.target.value as UserRole)}
-            className="rounded-lg border border-slate-300 bg-white px-2.5 py-1 text-xs font-semibold text-slate-800 shadow-xs focus:border-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-600/20 cursor-pointer"
-            title="Switch mock role to preview role-based UI"
-          >
-            {roles.map((r) => (
-              <option key={r.value} value={r.value}>
-                {r.label}
-              </option>
-            ))}
-          </select>
-        </div>
+        {/* Role Preview Switcher (UI tester) - Hidden or limited for customers */}
+        {!isCustomer && (
+          <div className="flex items-center gap-2">
+            <label htmlFor="role-select" className="text-xs font-medium text-slate-500 hidden md:inline">
+              Role Preview:
+            </label>
+            <select
+              id="role-select"
+              value={currentUser.role}
+              onChange={(e) => setCurrentRole(e.target.value as UserRole)}
+              className="rounded-lg border border-slate-300 bg-white px-2.5 py-1 text-xs font-semibold text-slate-800 shadow-xs focus:border-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-600/20 cursor-pointer"
+              title="Switch mock role to preview role-based UI"
+            >
+              {roles.map((r) => (
+                <option key={r.value} value={r.value}>
+                  {r.label}
+                </option>
+              ))}
+            </select>
+          </div>
+        )}
 
         {/* User initials bubble */}
         <div className="flex items-center gap-2.5 border-l border-slate-200 pl-3">

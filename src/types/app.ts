@@ -12,6 +12,7 @@ export type UserRole =
   | 'FINANCE'
   | 'VIEWER'
   | 'EMPLOYEE'
+  | 'CUSTOMER'
 
 export interface CurrentUser {
   id: string

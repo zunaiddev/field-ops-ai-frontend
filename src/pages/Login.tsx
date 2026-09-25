@@ -1,25 +1,33 @@
-import {useState} from 'react'
-import {Link, useNavigate} from 'react-router-dom'
-import {useForm} from 'react-hook-form'
-import {AuthLayout} from '../layouts/AuthLayout'
-import {Input} from '../components/ui/Input'
-import {PasswordInput} from '../components/ui/PasswordInput'
-import {Checkbox} from '../components/ui/Checkbox'
-import {Button} from '../components/ui/Button'
-import {AuthPrompt} from '../components/ui/AuthPrompt'
-import {EmailVerificationModal} from '../components/ui/EmailVerificationModal'
-import type {LoginFormValues} from '../types/auth'
-import {EMAIL_REGEX} from '../constants/auth'
-import authService from '../services/authService.ts'
+import { useState, type FC } from 'react'
+import { Link, useLocation, useNavigate } from 'react-router-dom'
+import { useForm } from 'react-hook-form'
+import { AuthLayout } from '../layouts/AuthLayout'
+import { Input } from '../components/ui/Input'
+import { PasswordInput } from '../components/ui/PasswordInput'
+import { Checkbox } from '../components/ui/Checkbox'
+import { Button } from '../components/ui/Button'
+import { AuthPrompt } from '../components/ui/AuthPrompt'
+import { EmailVerificationModal } from '../components/ui/EmailVerificationModal'
+import type { LoginFormValues } from '../types/auth'
+import { EMAIL_REGEX } from '../constants/auth'
+import authService from '../services/authService'
+import customerPortalService from '../services/customerPortalService'
 import toast from 'react-hot-toast'
-import {HttpStatusCode} from 'axios'
-import {useCurrentUser} from '../context/UserContext'
+import { HttpStatusCode } from 'axios'
+import { useCurrentUser } from '../context/UserContext'
 
-export default function Login() {
+interface LoginProps {
+  mode?: 'customer' | 'employee'
+}
+
+export const Login: FC<LoginProps> = ({ mode }) => {
   const [showVerificationModal, setShowVerificationModal] = useState(false)
   const [unverifiedEmail, setUnverifiedEmail] = useState('')
   const navigate = useNavigate()
-  const { setUserFromAuth } = useCurrentUser()
+  const location = useLocation()
+  const { setUserFromAuth, setCustomerFromAuth } = useCurrentUser()
+
+  const isEmployee = mode === 'employee' || location.pathname.includes('/employee')
 
   const {
     register,
@@ -36,28 +44,46 @@ export default function Login() {
   })
 
   async function onSubmit(data: LoginFormValues): Promise<void> {
-    const { success, error, payload, status } = await authService.orgLogin({
+    const credentials = {
       ...data,
       email: data.email.trim(),
-    })
+    }
+
+    const { success, error, payload, status } = isEmployee
+      ? await authService.employeeLogin(credentials)
+      : await authService.customerLogin(credentials)
 
     if (success && payload) {
       localStorage.setItem('token', payload.accessToken)
 
-      try {
-        const empRes = await authService.getEmployeeProfile()
-        if (empRes.success && empRes.payload) {
-          setUserFromAuth(payload, empRes.payload)
-        } else {
+      if (isEmployee) {
+        try {
+          const empRes = await authService.getEmployeeProfile()
+          if (empRes.success && empRes.payload) {
+            setUserFromAuth(payload, empRes.payload)
+          } else {
+            setUserFromAuth(payload, null)
+          }
+        } catch (err) {
+          console.error('Error fetching employee details:', err)
           setUserFromAuth(payload, null)
         }
-      } catch (err) {
-        console.error('Error fetching employee details:', err)
-        setUserFromAuth(payload, null)
+      } else {
+        try {
+          const custRes = await customerPortalService.getProfile()
+          if (custRes.success && custRes.payload) {
+            setCustomerFromAuth(payload, custRes.payload)
+          } else {
+            setCustomerFromAuth(payload, null)
+          }
+        } catch (err) {
+          console.error('Error fetching customer profile:', err)
+          setCustomerFromAuth(payload, null)
+        }
       }
 
       toast.success('Logged in successfully!')
-      navigate('/dashboard')
+      navigate('/service-requests')
       return
     }
 
@@ -95,8 +121,12 @@ export default function Login() {
 
   return (
     <AuthLayout
-      title="Sign in to your account"
-      subtitle="Enter your credentials to access the FieldOps platform"
+      title={isEmployee ? 'Sign in to Employee Portal' : 'Sign in to Customer Portal'}
+      subtitle={
+        isEmployee
+          ? 'Enter your credentials to access the FieldOps operations console'
+          : 'Enter your credentials to manage your services and tickets'
+      }
       cardMaxWidth="md"
       footer={
         <AuthPrompt
@@ -106,6 +136,34 @@ export default function Login() {
         />
       }
     >
+      {/* Switcher pill */}
+      <div className="mb-6 flex justify-center">
+        <div className="inline-flex items-center rounded-xl bg-slate-100 p-1 border border-slate-200/80">
+          <button
+            type="button"
+            onClick={() => navigate('/login')}
+            className={`rounded-lg px-4 py-1.5 text-xs font-semibold transition-all cursor-pointer ${
+              !isEmployee
+                ? 'bg-white text-blue-700 shadow-xs ring-1 ring-slate-200/80'
+                : 'text-slate-600 hover:text-slate-900'
+            }`}
+          >
+            Customer Portal
+          </button>
+          <button
+            type="button"
+            onClick={() => navigate('/login/employee')}
+            className={`rounded-lg px-4 py-1.5 text-xs font-semibold transition-all cursor-pointer ${
+              isEmployee
+                ? 'bg-white text-blue-700 shadow-xs ring-1 ring-slate-200/80'
+                : 'text-slate-600 hover:text-slate-900'
+            }`}
+          >
+            Employee Access
+          </button>
+        </div>
+      </div>
+
       <form onSubmit={handleSubmit(onSubmit)} noValidate className="space-y-4">
         <Input
           label="Email address"
@@ -148,7 +206,7 @@ export default function Login() {
           />
 
           <Link
-            to="/forgot-password"
+            to="/auth/forgot-password"
             className="text-xs font-medium text-blue-600 hover:text-blue-700 hover:underline sm:text-sm"
           >
             Forgot password?
@@ -163,7 +221,7 @@ export default function Login() {
             fullWidth
             isLoading={isSubmitting}
           >
-            Sign in
+            {isEmployee ? 'Sign in as Employee' : 'Sign in as Customer'}
           </Button>
         </div>
       </form>
@@ -185,3 +243,5 @@ export default function Login() {
     </AuthLayout>
   )
 }
+
+export default Login

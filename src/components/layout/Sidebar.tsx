@@ -5,9 +5,7 @@ import { useCurrentUser } from '../../context/UserContext'
 import {
   CloseIcon,
   CustomersIcon,
-  DashboardIcon,
   EmployeesIcon,
-  JobsIcon,
   LogoutIcon,
   ServiceRequestIcon,
   SettingsIcon,
@@ -17,11 +15,6 @@ import {
 import type { NavigationItem } from '../../types/app'
 
 export const navigationItems: NavigationItem[] = [
-  {
-    label: 'Dashboard',
-    path: '/dashboard',
-    icon: DashboardIcon,
-  },
   {
     label: 'Employees',
     path: '/employees',
@@ -46,12 +39,6 @@ export const navigationItems: NavigationItem[] = [
     icon: ServiceRequestIcon,
   },
   {
-    label: 'Jobs',
-    path: '/jobs',
-    icon: JobsIcon,
-    badge: '6',
-  },
-  {
     label: 'Skills',
     path: '/skills',
     icon: SkillsIcon,
@@ -66,6 +53,7 @@ interface SidebarProps {
 export const Sidebar: FC<SidebarProps> = ({ isOpen, onClose }) => {
   const { currentUser, logout } = useCurrentUser()
   const location = useLocation()
+  const isCustomer = currentUser.role === 'CUSTOMER'
 
   // Close mobile sidebar on route change
   useEffect(() => {
@@ -83,12 +71,21 @@ export const Sidebar: FC<SidebarProps> = ({ isOpen, onClose }) => {
     return () => window.removeEventListener('keydown', handleKeyDown)
   }, [isOpen, onClose])
 
-  // Filter navigation items based on current user role
-  const visibleNavItems = navigationItems.filter(
-    (item) => !item.roles || item.roles.includes(currentUser.role),
-  )
+  // Filter navigation items based on current user role: CUSTOMER only gets Services tab
+  const visibleNavItems = isCustomer
+    ? [
+        {
+          label: 'Services',
+          path: '/service-requests',
+          icon: ServiceRequestIcon,
+        },
+      ]
+    : navigationItems.filter(
+        (item) => !item.roles || item.roles.includes(currentUser.role),
+      )
 
   const roleBadgeStyles: Record<string, string> = {
+    CUSTOMER: 'bg-emerald-50 text-emerald-700 ring-emerald-700/20',
     OWNER: 'bg-blue-50 text-blue-700 ring-blue-700/20',
     ORG_OWNER: 'bg-blue-50 text-blue-700 ring-blue-700/20',
     ADMIN: 'bg-indigo-50 text-indigo-700 ring-indigo-700/20',
@@ -127,13 +124,13 @@ export const Sidebar: FC<SidebarProps> = ({ isOpen, onClose }) => {
           </button>
         </div>
 
-        {/* Organization Mini Context */}
+        {/* Organization / Portal Context */}
         <div className="border-b border-slate-100 px-5 py-3">
           <p className="text-[11px] font-medium tracking-wider uppercase text-slate-400">
-            Organization
+            {isCustomer ? 'Customer Portal' : 'Organization'}
           </p>
           <p className="mt-0.5 truncate text-xs font-semibold text-slate-800">
-            {currentUser.organizationName}
+            {currentUser.organizationName || 'FieldOps AI'}
           </p>
         </div>
 

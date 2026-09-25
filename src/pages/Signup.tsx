@@ -98,7 +98,7 @@ export default function Signup() {
         <AuthPrompt
           prompt="Already have an account?"
           linkText="Sign in"
-          to="/auth/login"
+          to="/login/employee"
         />
       }
     >
@@ -337,7 +337,7 @@ export default function Signup() {
         isOpen={showVerificationModal}
         onClose={() => setShowVerificationModal(false)}
         email={registeredEmail}
-        onPrimaryAction={() => navigate('/auth/login')}
+        onPrimaryAction={() => navigate('/login/employee')}
         primaryActionText="Go to Sign In"
         onResend={handleResendVerification}
       />

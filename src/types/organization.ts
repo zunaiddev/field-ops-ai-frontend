@@ -60,3 +60,22 @@ export interface Organization {
     updatedAt: Date;
     user: Employee;
 }
+
+export interface UpdateOrganizationDto {
+  name?: string;
+  slug?: string;
+  timezone?: string;
+  currency?: string;
+}
+
+export interface OrganizationRes {
+  id: number;
+  name: string;
+  slug: string;
+  status: string;
+  timezone: string;
+  currency: string;
+  createdAt: string;
+  updatedAt: string;
+  user: Employee;
+}

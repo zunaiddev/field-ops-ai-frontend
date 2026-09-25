@@ -14,8 +14,16 @@ import {
   type PaginatedServiceRequestsResponse,
 } from '../types/serviceRequest'
 import serviceRequestService from '../services/serviceRequestService'
+import { useCurrentUser } from '../context/UserContext'
+import CustomerServicesView from '../components/customer/CustomerServicesView'
 
 export const ServiceRequests: FC = () => {
+  const { currentUser } = useCurrentUser()
+
+  if (currentUser.role === 'CUSTOMER') {
+    return <CustomerServicesView />
+  }
+
   const [requests, setRequests] = useState<ServiceRequest[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)

@@ -15,7 +15,7 @@ export interface PublicRouteProps {
  */
 export default function PublicRoute({
   children,
-  redirectPath = '/dashboard',
+  redirectPath = '/service-requests',
   isAuthenticated: propIsAuthenticated,
 }: PublicRouteProps) {
   const { isAuthenticated: contextIsAuthenticated, isLoading } = useCurrentUser()

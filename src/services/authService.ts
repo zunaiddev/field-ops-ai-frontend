@@ -22,7 +22,7 @@ class AuthService {
     }
   }
 
-  async orgLogin(credentials: LoginFormValues): Promise<ApiResponse<LoginResponse>> {
+  async employeeLogin(credentials: LoginFormValues): Promise<ApiResponse<LoginResponse>> {
     try {
       const payload: LoginPayload = {
         email: credentials.email,
@@ -36,6 +36,27 @@ class AuthService {
     } catch (error) {
       return ApiResponse.error<LoginResponse>(error)
     }
+  }
+
+  async customerLogin(credentials: LoginFormValues): Promise<ApiResponse<LoginResponse>> {
+    try {
+      const payload: LoginPayload = {
+        email: credentials.email,
+        password: credentials.password,
+        remember: credentials.rememberMe,
+      }
+
+      const response = await publicApi.post<LoginResponse>('/auth/login/customer', payload)
+
+      return ApiResponse.success<LoginResponse>(response)
+    } catch (error) {
+      return ApiResponse.error<LoginResponse>(error)
+    }
+  }
+
+  // Alias for backward compatibility
+  async orgLogin(credentials: LoginFormValues): Promise<ApiResponse<LoginResponse>> {
+    return this.employeeLogin(credentials)
   }
 
   async getEmployeeProfile(): Promise<ApiResponse<EmployeeProfileResponse>> {
