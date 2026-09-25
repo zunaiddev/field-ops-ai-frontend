@@ -73,11 +73,36 @@ export type CustomerServicePriority = 'LOW' | 'MEDIUM' | 'HIGH' | 'CRITICAL'
 
 export type CustomerServiceStatus =
   | 'NEW'
+  | 'PENDING'
+  | 'ASSIGNED'
+  | 'SCHEDULED'
   | 'IN_PROGRESS'
   | 'ON_HOLD'
   | 'RESOLVED'
+  | 'COMPLETED'
   | 'CANCELLED'
   | string
+
+export interface CustomerScheduleTechnician {
+  id: number
+  name?: string
+  firstName?: string
+  lastName?: string
+  phone?: string | null
+  email?: string | null
+}
+
+export interface CustomerServiceSchedule {
+  id: number
+  serviceRequestId: number
+  scheduledStart: string
+  scheduledEnd: string
+  status: string
+  notes?: string | null
+  technician?: CustomerScheduleTechnician | null
+  createdAt: string
+  updatedAt: string
+}
 
 export interface CustomerServiceRequest {
   id: number

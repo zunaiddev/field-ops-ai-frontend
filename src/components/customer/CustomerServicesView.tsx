@@ -4,6 +4,7 @@ import { Button } from '../ui/Button'
 import { Input } from '../ui/Input'
 import { Select } from '../ui/Select'
 import {
+  CalendarIcon,
   CloseIcon,
   EyeIcon,
   MapPinIcon,
@@ -25,6 +26,7 @@ import type {
   UpdateCustomerServiceRequestDto,
 } from '../../types/publicCustomer'
 import { Link } from 'react-router-dom'
+import { CustomerScheduleModal } from './CustomerScheduleModal'
 
 const CATEGORY_OPTIONS: { value: CustomerServiceCategory; label: string }[] = [
   { value: 'NETWORK', label: 'Network' },
@@ -45,6 +47,7 @@ const PRIORITY_OPTIONS: { value: CustomerServicePriority; label: string }[] = [
 const STATUS_BADGES: Record<string, { bg: string; text: string; ring: string }> = {
   NEW: { bg: 'bg-blue-50', text: 'text-blue-700', ring: 'ring-blue-700/20' },
   PENDING: { bg: 'bg-amber-50', text: 'text-amber-700', ring: 'ring-amber-700/20' },
+  SCHEDULED: { bg: 'bg-sky-50', text: 'text-sky-700', ring: 'ring-sky-700/20' },
   IN_PROGRESS: { bg: 'bg-purple-50', text: 'text-purple-700', ring: 'ring-purple-700/20' },
   ON_HOLD: { bg: 'bg-orange-50', text: 'text-orange-700', ring: 'ring-orange-700/20' },
   RESOLVED: { bg: 'bg-emerald-50', text: 'text-emerald-700', ring: 'ring-emerald-700/20' },
@@ -80,6 +83,10 @@ export const CustomerServicesView: FC = () => {
   const [isEditModalOpen, setIsEditModalOpen] = useState(false)
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [deletingId, setDeletingId] = useState<number | null>(null)
+
+  // Scheduled Service Details Modal State
+  const [scheduleRequest, setScheduleRequest] = useState<CustomerServiceRequest | null>(null)
+  const [isScheduleModalOpen, setIsScheduleModalOpen] = useState(false)
 
   // Create/Edit Form State
   const [formAddressId, setFormAddressId] = useState<number | ''>('')
@@ -184,6 +191,11 @@ export const CustomerServicesView: FC = () => {
   const handleOpenViewModal = (req: CustomerServiceRequest) => {
     setSelectedRequest(req)
     setIsViewModalOpen(true)
+  }
+
+  const handleOpenScheduleModal = (req: CustomerServiceRequest) => {
+    setScheduleRequest(req)
+    setIsScheduleModalOpen(true)
   }
 
   const validateForm = (): boolean => {
@@ -369,6 +381,7 @@ export const CustomerServicesView: FC = () => {
               options={[
                 { value: 'ALL', label: 'All Statuses' },
                 { value: 'NEW', label: 'New' },
+                { value: 'SCHEDULED', label: 'Scheduled' },
                 { value: 'IN_PROGRESS', label: 'In Progress' },
                 { value: 'ON_HOLD', label: 'On Hold' },
                 { value: 'RESOLVED', label: 'Resolved' },
@@ -493,6 +506,7 @@ export const CustomerServicesView: FC = () => {
                   const statusStyle = STATUS_BADGES[req.status] || STATUS_BADGES.NEW
                   const priorityStyle = PRIORITY_BADGES[req.priority] || PRIORITY_BADGES.MEDIUM
                   const addr = addressMap.get(req.addressId)
+                  const isScheduled = req.status === 'SCHEDULED'
 
                   return (
                     <tr key={req.id} className="hover:bg-slate-50/80 transition-colors">
@@ -538,6 +552,25 @@ export const CustomerServicesView: FC = () => {
                       </td>
                       <td className="whitespace-nowrap py-4 pl-3 pr-4 sm:pr-6 text-right font-medium">
                         <div className="flex items-center justify-end gap-1.5">
+                          {/* When status is SCHEDULED: Explicit "Service Details" button */}
+                          {isScheduled && (
+                            <div className="relative group/schedule inline-flex items-center">
+                              <button
+                                type="button"
+                                onClick={() => handleOpenScheduleModal(req)}
+                                className="inline-flex items-center gap-1.5 rounded-lg bg-sky-50 px-2.5 py-1 text-xs font-semibold text-sky-700 ring-1 ring-sky-600/30 hover:bg-sky-100 hover:text-sky-800 transition-colors cursor-pointer"
+                                title="Show scheduled service details & assigned technician"
+                              >
+                                <CalendarIcon className="h-3.5 w-3.5 text-sky-600" />
+                                <span>Service Details</span>
+                              </button>
+                              <div className="pointer-events-none absolute bottom-full right-0 mb-1.5 hidden group-hover/schedule:block z-30 whitespace-nowrap rounded-md bg-slate-900 px-2 py-1 text-[11px] font-medium text-white shadow-lg">
+                                View technician appointment details
+                                <div className="absolute top-full right-4 -mt-1 border-4 border-transparent border-t-slate-900" />
+                              </div>
+                            </div>
+                          )}
+
                           {/* View Action */}
                           <div className="relative group/view inline-flex items-center">
                             <button
@@ -835,6 +868,33 @@ export const CustomerServicesView: FC = () => {
             </div>
 
             <div className="mt-4 space-y-4 text-xs">
+              {/* Highlight if Scheduled */}
+              {selectedRequest.status === 'SCHEDULED' && (
+                <div className="flex items-center justify-between rounded-xl border border-sky-200 bg-sky-50/70 p-3.5">
+                  <div className="flex items-center gap-2.5">
+                    <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-sky-600 text-white shrink-0">
+                      <CalendarIcon className="h-4 w-4" />
+                    </div>
+                    <div>
+                      <h5 className="text-xs font-bold text-sky-900">Service is Scheduled</h5>
+                      <p className="text-[11px] text-sky-700">A field technician has been dispatched.</p>
+                    </div>
+                  </div>
+                  <Button
+                    type="button"
+                    variant="primary"
+                    size="sm"
+                    leftIcon={<CalendarIcon className="h-3.5 w-3.5" />}
+                    onClick={() => {
+                      setIsViewModalOpen(false)
+                      handleOpenScheduleModal(selectedRequest)
+                    }}
+                  >
+                    Show Service Details
+                  </Button>
+                </div>
+              )}
+
               <div className="grid grid-cols-2 gap-3 rounded-xl bg-slate-50 p-3">
                 <div>
                   <span className="text-slate-500 block">Status:</span>
@@ -928,17 +988,43 @@ export const CustomerServicesView: FC = () => {
                   </div>
                 )}
               </div>
-              <Button
-                variant="primary"
-                size="sm"
-                onClick={() => setIsViewModalOpen(false)}
-              >
-                Done
-              </Button>
+              <div className="flex items-center gap-2">
+                {selectedRequest.status === 'SCHEDULED' && (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    leftIcon={<CalendarIcon className="h-3.5 w-3.5 text-sky-600" />}
+                    onClick={() => {
+                      setIsViewModalOpen(false)
+                      handleOpenScheduleModal(selectedRequest)
+                    }}
+                  >
+                    View Schedule
+                  </Button>
+                )}
+                <Button
+                  variant="primary"
+                  size="sm"
+                  onClick={() => setIsViewModalOpen(false)}
+                >
+                  Done
+                </Button>
+              </div>
             </div>
           </div>
         </div>
       )}
+
+      {/* Modal: View Scheduled Service Details */}
+      <CustomerScheduleModal
+        isOpen={isScheduleModalOpen}
+        serviceRequest={scheduleRequest}
+        serviceAddress={scheduleRequest ? addressMap.get(scheduleRequest.addressId) : null}
+        onClose={() => {
+          setIsScheduleModalOpen(false)
+          setScheduleRequest(null)
+        }}
+      />
     </div>
   )
 }

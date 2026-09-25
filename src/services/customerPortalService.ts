@@ -7,6 +7,7 @@ import type {
   CustomerAddress,
   CustomerProfile,
   CustomerServiceRequest,
+  CustomerServiceSchedule,
   UpdateCustomerAddressDto,
   UpdateCustomerProfileDto,
   UpdateCustomerServiceRequestDto,
@@ -175,6 +176,27 @@ class CustomerPortalService {
       return ApiResponse.success<void>(response)
     } catch (err) {
       return ApiResponse.error<void>(err)
+    }
+  }
+
+  /**
+   * 11. Get Customer Service Schedule
+   * GET /public/customers/schedule/:serviceRequestId
+   */
+  async getServiceSchedule(
+    serviceRequestId: number | string,
+  ): Promise<ApiResponse<CustomerServiceSchedule>> {
+    try {
+      const response: AxiosResponse = await protectedApi.get(
+        `/public/customers/schedule/${serviceRequestId}`,
+      )
+      const data: CustomerServiceSchedule = response.data?.data || response.data
+      return ApiResponse.success<CustomerServiceSchedule>({
+        ...response,
+        data,
+      })
+    } catch (err) {
+      return ApiResponse.error<CustomerServiceSchedule>(err)
     }
   }
 }

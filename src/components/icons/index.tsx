@@ -1,9 +1,9 @@
-import type { FC, SVGProps } from 'react'
+import { type FC, type SVGProps } from 'react'
 
 export interface IconProps extends SVGProps<SVGSVGElement> {
   className?: string
   size?: number | string
-  strokeWidth?: number | string
+  strokeWidth?: number
 }
 
 export const DashboardIcon: FC<IconProps> = ({
@@ -68,13 +68,11 @@ export const CustomersIcon: FC<IconProps> = ({
     aria-hidden="true"
     {...props}
   >
-    <path d="M6 22V4a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v18Z" />
-    <path d="M6 12H4a2 2 0 0 0-2 2v6a2 2 0 0 0 2 2h2" />
-    <path d="M18 9h2a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2h-2" />
-    <path d="M10 6h4" />
-    <path d="M10 10h4" />
-    <path d="M10 14h4" />
-    <path d="M10 18h4" />
+    <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
+    <circle cx="9" cy="7" r="4" />
+    <path d="M23 21v-2a4 4 0 0 0-3-3.87" />
+    <path d="M16 3.13a4 4 0 0 1 0 7.75" />
+    <path d="M12 11h.01" />
   </svg>
 )
 
@@ -94,7 +92,8 @@ export const JobsIcon: FC<IconProps> = ({
     aria-hidden="true"
     {...props}
   >
-    <path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z" />
+    <rect width="20" height="14" x="2" y="7" rx="2" ry="2" />
+    <path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16" />
   </svg>
 )
 
@@ -114,9 +113,7 @@ export const ServiceRequestIcon: FC<IconProps> = ({
     aria-hidden="true"
     {...props}
   >
-    <path d="M9 5H7a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-2" />
-    <rect x="9" y="3" width="6" height="4" rx="1" />
-    <path d="m9 14 2 2 4-4" />
+    <path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z" />
   </svg>
 )
 
@@ -202,8 +199,8 @@ export const CloseIcon: FC<IconProps> = ({
     aria-hidden="true"
     {...props}
   >
-    <line x1="18" y1="6" x2="6" y2="18" />
-    <line x1="6" y1="6" x2="18" y2="18" />
+    <path d="M18 6 6 18" />
+    <path d="m6 6 12 12" />
   </svg>
 )
 
@@ -223,7 +220,9 @@ export const MenuIcon: FC<IconProps> = ({
     aria-hidden="true"
     {...props}
   >
-    <path d="M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25h16.5" />
+    <line x1="4" x2="20" y1="12" y2="12" />
+    <line x1="4" x2="20" y1="6" y2="6" />
+    <line x1="4" x2="20" y1="18" y2="18" />
   </svg>
 )
 
@@ -247,10 +246,13 @@ export const BuildingIcon: FC<IconProps> = ({
     <path d="M9 22v-4h6v4" />
     <path d="M8 6h.01" />
     <path d="M16 6h.01" />
-    <path d="M8 10h.01" />
+    <path d="M12 6h.01" />
+    <path d="M12 10h.01" />
+    <path d="M12 14h.01" />
     <path d="M16 10h.01" />
-    <path d="M8 14h.01" />
     <path d="M16 14h.01" />
+    <path d="M8 10h.01" />
+    <path d="M8 14h.01" />
   </svg>
 )
 
@@ -270,7 +272,10 @@ export const UsersIcon: FC<IconProps> = ({
     aria-hidden="true"
     {...props}
   >
-    <path d="M15 19.128a9.38 9.38 0 002.625.372 9.337 9.337 0 004.121-.952 4.125 4.125 0 00-7.533-2.493M15 19.128v-.003c0-1.113-.285-2.16-.786-3.07M15 19.128v.106A12.318 12.318 0 018.624 21c-2.331 0-4.512-.645-6.374-1.766l-.001-.109a6.375 6.375 0 0111.964-3.07M12 6.375a3.375 3.375 0 11-6.75 0 3.375 3.375 0 016.75 0zm8.25 2.25a2.625 2.625 0 11-5.25 0 2.625 2.625 0 015.25 0z" />
+    <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" />
+    <circle cx="9" cy="7" r="4" />
+    <path d="M22 21v-2a4 4 0 0 0-3-3.87" />
+    <path d="M16 3.13a4 4 0 0 1 0 7.75" />
   </svg>
 )
 
@@ -290,7 +295,7 @@ export const WrenchIcon: FC<IconProps> = ({
     aria-hidden="true"
     {...props}
   >
-    <path d="M11.42 15.17L17.25 21A2.652 2.652 0 0021 17.25l-5.877-5.877M11.42 15.17l2.496-3.03c.317-.384.74-.626 1.208-.766M11.42 15.17l-4.655 5.653a2.548 2.548 0 11-3.586-3.586l6.837-5.63m5.108-.233l2.846-2.846a3.75 3.75 0 00-5.304-5.304l-2.846 2.846m5.304 5.304l-5.304-5.304" />
+    <path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z" />
   </svg>
 )
 
@@ -310,13 +315,13 @@ export const ClockIcon: FC<IconProps> = ({
     aria-hidden="true"
     {...props}
   >
-    <circle cx="12" cy="12" r="9" />
-    <path d="M12 6v6l4.5 2.25" />
+    <circle cx="12" cy="12" r="10" />
+    <polyline points="12 6 12 12 16 14" />
   </svg>
 )
 
 export const PlusIcon: FC<IconProps> = ({
-  className = 'h-4 w-4',
+  className = 'h-5 w-5',
   strokeWidth = 2,
   ...props
 }) => (
@@ -331,12 +336,13 @@ export const PlusIcon: FC<IconProps> = ({
     aria-hidden="true"
     {...props}
   >
-    <path d="M12 4.5v15m7.5-7.5h-15" />
+    <path d="M5 12h14" />
+    <path d="M12 5v14" />
   </svg>
 )
 
 export const SearchIcon: FC<IconProps> = ({
-  className = 'h-4 w-4',
+  className = 'h-5 w-5',
   strokeWidth = 2,
   ...props
 }) => (
@@ -352,7 +358,7 @@ export const SearchIcon: FC<IconProps> = ({
     {...props}
   >
     <circle cx="11" cy="11" r="8" />
-    <path d="m21 21-4.35-4.35" />
+    <path d="m21 21-4.3-4.3" />
   </svg>
 )
 
@@ -372,7 +378,7 @@ export const EyeIcon: FC<IconProps> = ({
     aria-hidden="true"
     {...props}
   >
-    <path d="M2.036 12.322a1.012 1.012 0 0 1 0-.639C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.638 0-8.573-3.007-9.963-7.178Z" />
+    <path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z" />
     <circle cx="12" cy="12" r="3" />
   </svg>
 )
@@ -393,12 +399,15 @@ export const EyeOffIcon: FC<IconProps> = ({
     aria-hidden="true"
     {...props}
   >
-    <path d="M3.98 8.223A10.477 10.477 0 0 0 1.934 12C3.226 16.338 7.244 19.5 12 19.5c.993 0 1.953-.138 2.863-.395M6.228 6.228A10.451 10.451 0 0 1 12 4.5c4.756 0 8.773 3.162 10.065 7.498a10.522 10.522 0 0 1-4.293 5.774M6.228 6.228 3 3m3.228 3.228 3.65 3.65m7.894 7.894L21 21m-3.228-3.228-3.65-3.65m0 0a3 3 0 1 0-4.243-4.243m4.242 4.242L9.88 9.88" />
+    <path d="M9.88 9.88a3 3 0 1 0 4.24 4.24" />
+    <path d="M10.73 5.08A10.43 10.43 0 0 1 12 5c7 0 10 7 10 7a13.16 13.16 0 0 1-1.67 2.68" />
+    <path d="M6.61 6.61A13.526 13.526 0 0 0 2 12s3 7 10 7a9.74 9.74 0 0 0 5.39-1.61" />
+    <line x1="2" x2="22" y1="2" y2="22" />
   </svg>
 )
 
 export const TrashIcon: FC<IconProps> = ({
-  className = 'h-4 w-4',
+  className = 'h-5 w-5',
   strokeWidth = 2,
   ...props
 }) => (
@@ -413,12 +422,14 @@ export const TrashIcon: FC<IconProps> = ({
     aria-hidden="true"
     {...props}
   >
-    <path d="M3 6h18m-2 0v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6m3 0V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2m-6 5v6m4-6v6" />
+    <path d="M3 6h18" />
+    <path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6" />
+    <path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2" />
   </svg>
 )
 
 export const PencilIcon: FC<IconProps> = ({
-  className = 'h-4 w-4',
+  className = 'h-5 w-5',
   strokeWidth = 2,
   ...props
 }) => (
@@ -439,7 +450,7 @@ export const PencilIcon: FC<IconProps> = ({
 )
 
 export const MapPinIcon: FC<IconProps> = ({
-  className = 'h-4 w-4',
+  className = 'h-5 w-5',
   strokeWidth = 2,
   ...props
 }) => (
@@ -475,8 +486,8 @@ export const SkillsIcon: FC<IconProps> = ({
     aria-hidden="true"
     {...props}
   >
-    <path d="m15.477 12.89 1.515 8.526a.5.5 0 0 1-.747.513L12 19.648l-4.245 2.281a.5.5 0 0 1-.747-.513l1.515-8.526" />
-    <circle cx="12" cy="8" r="6" />
+    <path d="m12 14 4-4" />
+    <path d="M3.34 19a10 10 0 1 1 17.32 0" />
   </svg>
 )
 
@@ -496,11 +507,11 @@ export const SparklesIcon: FC<IconProps> = ({
     aria-hidden="true"
     {...props}
   >
-    <path d="M9.937 15.5A2 2 0 0 0 8.5 14.063l-6.135-1.582a.5.5 0 0 1 0-.962L8.5 9.936A2 2 0 0 0 9.937 8.5l1.582-6.135a.5.5 0 0 1 .963 0L14.063 8.5A2 2 0 0 0 15.5 9.937l6.135 1.581a.5.5 0 0 1 0 .964L15.5 14.063a2 2 0 0 0-1.437 1.437l-1.582 6.135a.5.5 0 0 1-.963 0z" />
-    <path d="M20 3v4" />
-    <path d="M22 5h-4" />
-    <path d="M4 17v2" />
-    <path d="M5 18H3" />
+    <path d="m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.275L12 3Z" />
+    <path d="M5 3v4" />
+    <path d="M19 17v4" />
+    <path d="M3 5h4" />
+    <path d="M17 19h4" />
   </svg>
 )
 
@@ -524,5 +535,46 @@ export const CalendarIcon: FC<IconProps> = ({
     <line x1="16" x2="16" y1="2" y2="6" />
     <line x1="8" x2="8" y1="2" y2="6" />
     <line x1="3" x2="21" y1="10" y2="10" />
+  </svg>
+)
+
+export const PhoneIcon: FC<IconProps> = ({
+  className = 'h-5 w-5',
+  strokeWidth = 2,
+  ...props
+}) => (
+  <svg
+    className={className}
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth={strokeWidth}
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    aria-hidden="true"
+    {...props}
+  >
+    <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z" />
+  </svg>
+)
+
+export const MailIcon: FC<IconProps> = ({
+  className = 'h-5 w-5',
+  strokeWidth = 2,
+  ...props
+}) => (
+  <svg
+    className={className}
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth={strokeWidth}
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    aria-hidden="true"
+    {...props}
+  >
+    <rect width="20" height="16" x="2" y="4" rx="2" />
+    <path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7" />
   </svg>
 )
