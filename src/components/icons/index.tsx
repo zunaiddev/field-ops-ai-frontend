@@ -503,3 +503,26 @@ export const SparklesIcon: FC<IconProps> = ({
     <path d="M5 18H3" />
   </svg>
 )
+
+export const CalendarIcon: FC<IconProps> = ({
+  className = 'h-5 w-5',
+  strokeWidth = 2,
+  ...props
+}) => (
+  <svg
+    className={className}
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth={strokeWidth}
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    aria-hidden="true"
+    {...props}
+  >
+    <rect width="18" height="18" x="3" y="4" rx="2" ry="2" />
+    <line x1="16" x2="16" y1="2" y2="6" />
+    <line x1="8" x2="8" y1="2" y2="6" />
+    <line x1="3" x2="21" y1="10" y2="10" />
+  </svg>
+)

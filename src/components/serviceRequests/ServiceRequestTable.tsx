@@ -6,12 +6,13 @@ import type {
   ServiceRequestStatus,
   ServiceRequestSource,
 } from '../../types/serviceRequest'
-import { EyeIcon, PencilIcon } from '../icons'
+import { CalendarIcon, EyeIcon, PencilIcon } from '../icons'
 
 interface ServiceRequestTableProps {
   requests: ServiceRequest[]
   onViewRequest: (request: ServiceRequest) => void
   onEditRequest?: (request: ServiceRequest) => void
+  onViewSchedule?: (request: ServiceRequest) => void
 }
 
 export const statusBadgeStyles: Record<
@@ -41,6 +42,18 @@ export const statusBadgeStyles: Record<
     text: 'text-indigo-700',
     dot: 'bg-indigo-600',
     label: 'In Progress',
+  },
+  ON_HOLD: {
+    bg: 'bg-amber-50 ring-amber-600/20',
+    text: 'text-amber-700',
+    dot: 'bg-amber-600',
+    label: 'On Hold',
+  },
+  SCHEDULED: {
+    bg: 'bg-sky-50 ring-sky-600/20',
+    text: 'text-sky-700',
+    dot: 'bg-sky-600',
+    label: 'Scheduled',
   },
   RESOLVED: {
     bg: 'bg-emerald-50 ring-emerald-600/20',
@@ -168,6 +181,7 @@ export const ServiceRequestTable: FC<ServiceRequestTableProps> = ({
   requests,
   onViewRequest,
   onEditRequest,
+  onViewSchedule,
 }) => {
   if (requests.length === 0) {
     return (
@@ -252,6 +266,8 @@ export const ServiceRequestTable: FC<ServiceRequestTableProps> = ({
                 text: 'text-slate-700',
                 label: req.source,
               }
+
+              const isScheduled = req.status?.toUpperCase() === 'SCHEDULED'
 
               return (
                 <tr
@@ -338,6 +354,17 @@ export const ServiceRequestTable: FC<ServiceRequestTableProps> = ({
                   {/* Actions */}
                   <td className="py-3.5 pl-3 pr-4 text-right sm:pr-6 whitespace-nowrap">
                     <div className="inline-flex items-center gap-1.5">
+                      {isScheduled && onViewSchedule && (
+                        <button
+                          type="button"
+                          onClick={() => onViewSchedule(req)}
+                          className="inline-flex items-center gap-1 rounded-lg border border-sky-200 bg-sky-50 px-2.5 py-1.5 text-xs font-semibold text-sky-700 shadow-2xs hover:bg-sky-100 hover:border-sky-300 transition-colors cursor-pointer"
+                          title="View schedule details for this service"
+                        >
+                          <CalendarIcon className="h-3.5 w-3.5 text-sky-600" />
+                          <span>Schedule</span>
+                        </button>
+                      )}
                       {onEditRequest && (
                         <button
                           type="button"

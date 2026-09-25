@@ -25,6 +25,8 @@ export type ServiceRequestStatus =
   | 'PENDING'
   | 'ASSIGNED'
   | 'IN_PROGRESS'
+  | 'ON_HOLD'
+  | 'SCHEDULED'
   | 'RESOLVED'
   | 'COMPLETED'
   | 'CANCELLED'

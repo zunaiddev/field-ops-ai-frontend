@@ -1,4 +1,5 @@
 import { useState, useMemo, useEffect, useCallback, type FC } from 'react'
+import toast from 'react-hot-toast'
 import { Button } from '../components/ui/Button'
 import { Input } from '../components/ui/Input'
 import { Select } from '../components/ui/Select'
@@ -6,6 +7,8 @@ import { ServiceRequestTable } from '../components/serviceRequests/ServiceReques
 import { ServiceRequestDetailsModal } from '../components/serviceRequests/ServiceRequestDetailsModal'
 import { CreateServiceRequestModal } from '../components/serviceRequests/CreateServiceRequestModal'
 import { UpdateServiceRequestModal } from '../components/serviceRequests/UpdateServiceRequestModal'
+import { ScheduleDetailsModal } from '../components/schedules/ScheduleDetailsModal'
+import { CreateScheduleModal } from '../components/schedules/CreateScheduleModal'
 import { PlusIcon, SearchIcon, TicketIcon } from '../components/icons'
 import {
   ServiceRequestCategory,
@@ -13,7 +16,9 @@ import {
   type ServiceRequest,
   type PaginatedServiceRequestsResponse,
 } from '../types/serviceRequest'
+import type { Schedule } from '../types/schedule'
 import serviceRequestService from '../services/serviceRequestService'
+import scheduleService from '../services/scheduleService'
 import { useCurrentUser } from '../context/UserContext'
 import CustomerServicesView from '../components/customer/CustomerServicesView'
 
@@ -47,6 +52,12 @@ export const ServiceRequests: FC = () => {
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false)
   const [editingRequest, setEditingRequest] = useState<ServiceRequest | null>(null)
   const [isEditModalOpen, setIsEditModalOpen] = useState(false)
+
+  // Schedule modals state
+  const [selectedSchedule, setSelectedSchedule] = useState<Schedule | null>(null)
+  const [isScheduleDetailsOpen, setIsScheduleDetailsOpen] = useState(false)
+  const [isCreateScheduleOpen, setIsCreateScheduleOpen] = useState(false)
+  const [scheduleServiceRequestId, setScheduleServiceRequestId] = useState<number | null>(null)
 
   // Fetch Service Requests
   const fetchServiceRequests = useCallback(async () => {
@@ -149,6 +160,35 @@ export const ServiceRequests: FC = () => {
     }
   }
 
+  const handleViewSchedule = async (req: ServiceRequest) => {
+    try {
+      const res = await scheduleService.getScheduleByServiceId(req.id)
+      if (res.success && res.payload) {
+        setSelectedSchedule(res.payload)
+        setIsScheduleDetailsOpen(true)
+      } else {
+        toast.error(res.error?.message || `No active schedule found for Service #${req.id}`)
+        handleOpenViewModal(req)
+      }
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Failed to retrieve schedule')
+      handleOpenViewModal(req)
+    }
+  }
+
+  const handleScheduleDeleted = () => {
+    setIsScheduleDetailsOpen(false)
+    setSelectedSchedule(null)
+    // Refresh to reflect the ON_HOLD status across the board
+    fetchServiceRequests()
+  }
+
+  const handleScheduleCreated = () => {
+    setIsCreateScheduleOpen(false)
+    setScheduleServiceRequestId(null)
+    fetchServiceRequests()
+  }
+
   const handleResetFilters = () => {
     setSearchQuery('')
     setStatusFilter('ALL')
@@ -234,6 +274,8 @@ export const ServiceRequests: FC = () => {
                 { value: 'NEW', label: 'New' },
                 { value: 'PENDING', label: 'Pending' },
                 { value: 'ASSIGNED', label: 'Assigned' },
+                { value: 'SCHEDULED', label: 'Scheduled' },
+                { value: 'ON_HOLD', label: 'On Hold' },
                 { value: 'IN_PROGRESS', label: 'In Progress' },
                 { value: 'RESOLVED', label: 'Resolved' },
                 { value: 'COMPLETED', label: 'Completed' },
@@ -365,6 +407,7 @@ export const ServiceRequests: FC = () => {
           requests={filteredRequests}
           onViewRequest={handleOpenViewModal}
           onEditRequest={handleOpenEditModal}
+          onViewSchedule={handleViewSchedule}
         />
       )}
 
@@ -412,7 +455,7 @@ export const ServiceRequests: FC = () => {
         </div>
       )}
 
-      {/* Modal: View Details */}
+      {/* Modal: View Request Details */}
       <ServiceRequestDetailsModal
         isOpen={isViewModalOpen}
         request={selectedRequest}
@@ -421,6 +464,34 @@ export const ServiceRequests: FC = () => {
           handleCloseViewModal()
           handleOpenEditModal(req)
         }}
+        onRequestUpdated={handleRequestUpdated}
+        onOpenScheduleModal={(serviceReqId) => {
+          handleCloseViewModal()
+          setScheduleServiceRequestId(serviceReqId)
+          setIsCreateScheduleOpen(true)
+        }}
+      />
+
+      {/* Modal: Schedule Details */}
+      <ScheduleDetailsModal
+        isOpen={isScheduleDetailsOpen}
+        schedule={selectedSchedule}
+        onClose={() => {
+          setIsScheduleDetailsOpen(false)
+          setSelectedSchedule(null)
+        }}
+        onScheduleDeleted={handleScheduleDeleted}
+      />
+
+      {/* Modal: Create Schedule */}
+      <CreateScheduleModal
+        isOpen={isCreateScheduleOpen}
+        initialServiceRequestId={scheduleServiceRequestId || undefined}
+        onClose={() => {
+          setIsCreateScheduleOpen(false)
+          setScheduleServiceRequestId(null)
+        }}
+        onScheduleCreated={handleScheduleCreated}
       />
 
       {/* Modal: Create Request */}

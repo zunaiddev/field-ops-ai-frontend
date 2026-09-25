@@ -9,6 +9,7 @@ import Employees from '../pages/Employees'
 import Technicians from '../pages/Technicians'
 import Customers from '../pages/Customers'
 import ServiceRequests from '../pages/ServiceRequests'
+import Schedules from '../pages/Schedules'
 import Skills from '../pages/Skills'
 import Settings from '../pages/Settings'
 
@@ -104,6 +105,14 @@ const routes: RouteObject[] = [
       {
         path: 'service-requests',
         element: <ServiceRequests />,
+      },
+      {
+        path: 'schedules',
+        element: (
+          <EmployeeRoute>
+            <Schedules />
+          </EmployeeRoute>
+        ),
       },
       {
         path: 'services',

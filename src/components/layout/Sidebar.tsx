@@ -3,6 +3,7 @@ import { NavLink, useLocation } from 'react-router-dom'
 import { FieldOpsLogo } from '../ui/FieldOpsLogo'
 import { useCurrentUser } from '../../context/UserContext'
 import {
+  CalendarIcon,
   CloseIcon,
   CustomersIcon,
   EmployeesIcon,
@@ -37,6 +38,12 @@ export const navigationItems: NavigationItem[] = [
     label: 'Service Requests',
     path: '/service-requests',
     icon: ServiceRequestIcon,
+  },
+  {
+    label: 'Schedules',
+    path: '/schedules',
+    icon: CalendarIcon,
+    roles: ['OWNER', 'ORG_OWNER', 'ADMIN', 'ORG_ADMIN', 'MANAGER'],
   },
   {
     label: 'Skills',

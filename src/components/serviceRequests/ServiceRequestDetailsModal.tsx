@@ -9,10 +9,14 @@ import {
   BuildingIcon,
   TicketIcon,
   PencilIcon,
+  CalendarIcon,
+  TrashIcon,
 } from '../icons'
 import type { ServiceRequest } from '../../types/serviceRequest'
 import type { Customer, CustomerAddressRes } from '../../types/customer'
 import type { Employee } from '../../types/organization'
+import type { Schedule } from '../../types/schedule'
+import type { Technician } from '../../types/technician'
 import {
   statusBadgeStyles,
   priorityBadgeStyles,
@@ -21,12 +25,18 @@ import {
 } from './ServiceRequestTable'
 import customerService from '../../services/customerService'
 import dashboardService from '../../services/dashboardService'
+import scheduleService from '../../services/scheduleService'
+import serviceRequestService from '../../services/serviceRequestService'
+import technicianService from '../../services/technicianService'
+import { useAlertModal } from '../../context/AlertModalContext'
 
 interface ServiceRequestDetailsModalProps {
   isOpen: boolean
   request: ServiceRequest | null
   onClose: () => void
   onEditRequest?: (request: ServiceRequest) => void
+  onRequestUpdated?: (request: ServiceRequest) => void
+  onOpenScheduleModal?: (serviceRequestId: number) => void
 }
 
 const roleBadgeStyles: Record<string, { bg: string; text: string; label: string }> = {
@@ -82,12 +92,36 @@ function formatDateTime(dateValue: string | Date | null | undefined): string {
   }
 }
 
+function calculateDuration(start?: string | null, end?: string | null): string {
+  if (!start || !end) return '—'
+  try {
+    const s = new Date(start).getTime()
+    const e = new Date(end).getTime()
+    if (isNaN(s) || isNaN(e) || e <= s) return '—'
+    const diffMinutes = Math.round((e - s) / (1000 * 60))
+    const hours = Math.floor(diffMinutes / 60)
+    const minutes = diffMinutes % 60
+    if (hours > 0 && minutes > 0) return `${hours} hr ${minutes} min`
+    if (hours > 0) return `${hours} hr`
+    return `${minutes} min`
+  } catch {
+    return '—'
+  }
+}
+
 export const ServiceRequestDetailsModal: FC<ServiceRequestDetailsModalProps> = ({
   isOpen,
   request,
   onClose,
   onEditRequest,
+  onRequestUpdated,
+  onOpenScheduleModal,
 }) => {
+  const { confirm } = useAlertModal()
+
+  // Local synced copy of request
+  const [currentRequest, setCurrentRequest] = useState<ServiceRequest | null>(request)
+
   // Customer fetch state
   const [customer, setCustomer] = useState<Customer | null>(null)
   const [loadingCustomer, setLoadingCustomer] = useState(false)
@@ -103,6 +137,13 @@ export const ServiceRequestDetailsModal: FC<ServiceRequestDetailsModalProps> = (
   const [creatorEmployee, setCreatorEmployee] = useState<Employee | null>(null)
   const [loadingCreator, setLoadingCreator] = useState(false)
   const [isCreatorModalOpen, setIsCreatorModalOpen] = useState(false)
+
+  // Schedule fetch state
+  const [schedule, setSchedule] = useState<Schedule | null>(null)
+  const [loadingSchedule, setLoadingSchedule] = useState(false)
+  const [scheduleError, setScheduleError] = useState<string | null>(null)
+  const [assignedTechnician, setAssignedTechnician] = useState<Technician | null>(null)
+  const [isDeletingSchedule, setIsDeletingSchedule] = useState(false)
 
   // Fetch Customer Details
   const fetchCustomerDetails = useCallback(async (customerId: number | string) => {
@@ -148,7 +189,6 @@ export const ServiceRequestDetailsModal: FC<ServiceRequestDetailsModalProps> = (
             const found = list.find((a) => Number(a.id) === Number(targetAddressId))
             setAddress(found || list[0] || null)
           } else if (list.length > 0) {
-            // Pick primary address or first address
             const primary = list.find((a) => a.isPrimary) || list[0]
             setAddress(primary)
           } else {
@@ -167,6 +207,93 @@ export const ServiceRequestDetailsModal: FC<ServiceRequestDetailsModalProps> = (
     },
     [],
   )
+
+  // Fetch Schedule for Service Request
+  const fetchScheduleDetails = useCallback(async (serviceId: number | string) => {
+    setLoadingSchedule(true)
+    setScheduleError(null)
+    setAssignedTechnician(null)
+    try {
+      const res = await scheduleService.getScheduleByServiceId(serviceId)
+      if (res.success && res.payload) {
+        setSchedule(res.payload)
+
+        // Try to fetch technician details for richer display
+        if (res.payload.technicianId) {
+          try {
+            const techRes = await technicianService.getTechnicians()
+            if (techRes.success && techRes.payload) {
+              const techList: Technician[] = Array.isArray(techRes.payload)
+                ? techRes.payload
+                : []
+              const found = techList.find(
+                (t) => Number(t.id) === Number(res.payload?.technicianId),
+              )
+              if (found) setAssignedTechnician(found)
+            }
+          } catch {
+            // Non-critical, ignore
+          }
+        }
+      } else {
+        setSchedule(null)
+        setScheduleError(res.error?.message || 'No active schedule found')
+      }
+    } catch (err) {
+      setSchedule(null)
+      setScheduleError(err instanceof Error ? err.message : 'Error loading schedule')
+    } finally {
+      setLoadingSchedule(false)
+    }
+  }, [])
+
+  // Delete Schedule & set service status to ON_HOLD
+  const handleDeleteSchedule = async () => {
+    if (!schedule || !currentRequest) return
+
+    const confirmed = await confirm({
+      title: 'Delete Service Schedule',
+      message: `Are you sure you want to delete this schedule? The service request status will be updated to ON_HOLD.`,
+      confirmText: 'Delete Schedule',
+      cancelText: 'Cancel',
+      variant: 'danger',
+    })
+
+    if (!confirmed) return
+
+    setIsDeletingSchedule(true)
+    try {
+      // 1. Delete the schedule
+      const delRes = await scheduleService.deleteSchedule(schedule.id)
+      if (!delRes.success) {
+        toast.error(delRes.error?.message || 'Failed to delete schedule')
+        return
+      }
+
+      // 2. Update service request status to ON_HOLD
+      const updateRes = await serviceRequestService.updateServiceRequest(currentRequest.id, {
+        status: 'ON_HOLD',
+      })
+
+      const updatedRequest: ServiceRequest =
+        updateRes.success && updateRes.payload
+          ? (updateRes.payload as ServiceRequest)
+          : { ...currentRequest, status: 'ON_HOLD' }
+
+      setCurrentRequest(updatedRequest)
+      setSchedule(null)
+      setAssignedTechnician(null)
+      onRequestUpdated?.(updatedRequest)
+
+      toast.success('Schedule deleted. Service request status updated to ON_HOLD.')
+    } catch (err) {
+      toast.error(
+        err instanceof Error ? err.message : 'An error occurred while deleting schedule',
+      )
+    } finally {
+      setIsDeletingSchedule(false)
+    }
+  }
 
   // Fetch Employee Creator on demand when button clicked
   const handleFetchCreatorEmployee = async (employeeId: number | string) => {
@@ -190,27 +317,37 @@ export const ServiceRequestDetailsModal: FC<ServiceRequestDetailsModalProps> = (
     }
   }
 
-  // Load Customer and Address when modal opens
+  // Load data when modal opens
   useEffect(() => {
     if (isOpen && request) {
+      setCurrentRequest(request)
       setCustomer(null)
       setAddress(null)
       setAllAddresses([])
       setCreatorEmployee(null)
       setIsCreatorModalOpen(false)
+      setSchedule(null)
+      setAssignedTechnician(null)
 
       if (request.customerId) {
         fetchCustomerDetails(request.customerId)
         fetchAddressDetails(request.customerId, request.addressId)
       }
+
+      if (request.status?.toUpperCase() === 'SCHEDULED') {
+        fetchScheduleDetails(request.id)
+      }
     } else {
+      setCurrentRequest(null)
       setCustomer(null)
       setAddress(null)
       setAllAddresses([])
       setCreatorEmployee(null)
       setIsCreatorModalOpen(false)
+      setSchedule(null)
+      setAssignedTechnician(null)
     }
-  }, [isOpen, request, fetchCustomerDetails, fetchAddressDetails])
+  }, [isOpen, request, fetchCustomerDetails, fetchAddressDetails, fetchScheduleDetails])
 
   // Close on Escape key
   useEffect(() => {
@@ -232,33 +369,39 @@ export const ServiceRequestDetailsModal: FC<ServiceRequestDetailsModalProps> = (
     }
   }, [isOpen, isCreatorModalOpen, onClose])
 
-  if (!isOpen || !request) return null
+  if (!isOpen || !currentRequest) return null
 
-  const statusCfg = statusBadgeStyles[request.status] || {
+  const statusCfg = statusBadgeStyles[currentRequest.status] || {
     bg: 'bg-slate-100 ring-slate-500/20',
     text: 'text-slate-600',
     dot: 'bg-slate-500',
-    label: request.status,
+    label: currentRequest.status,
   }
 
-  const priorityCfg = priorityBadgeStyles[request.priority] || {
+  const priorityCfg = priorityBadgeStyles[currentRequest.priority] || {
     bg: 'bg-slate-100 text-slate-700 ring-slate-600/20',
     text: 'text-slate-700',
-    label: request.priority,
+    label: currentRequest.priority,
   }
 
-  const categoryCfg = categoryBadgeStyles[request.category] || {
+  const categoryCfg = categoryBadgeStyles[currentRequest.category] || {
     bg: 'bg-slate-100 ring-slate-600/20',
     text: 'text-slate-700',
   }
 
-  const sourceCfg = sourceBadgeStyles[request.source] || {
+  const sourceCfg = sourceBadgeStyles[currentRequest.source] || {
     bg: 'bg-slate-100 text-slate-700 ring-slate-600/20',
     text: 'text-slate-700',
-    label: request.source,
+    label: currentRequest.source,
   }
 
-  const isEmployeeSource = request.source?.toUpperCase() === 'EMPLOYEE'
+  const isEmployeeSource = currentRequest.source?.toUpperCase() === 'EMPLOYEE'
+  const isScheduled = currentRequest.status?.toUpperCase() === 'SCHEDULED'
+
+  const techDisplayName = assignedTechnician?.employee
+    ? `${assignedTechnician.employee.firstName || ''} ${assignedTechnician.employee.lastName || ''}`.trim() ||
+      `Technician #${schedule?.technicianId}`
+    : `Technician ID #${schedule?.technicianId}`
 
   return (
     <div
@@ -283,10 +426,10 @@ export const ServiceRequestDetailsModal: FC<ServiceRequestDetailsModalProps> = (
             <div>
               <div className="flex flex-wrap items-center gap-2">
                 <span className="font-mono text-xs font-bold text-slate-500 bg-white px-2 py-0.5 rounded border border-slate-200">
-                  #REQ-{request.id}
+                  #REQ-{currentRequest.id}
                 </span>
                 <h3 className="text-xl font-bold tracking-tight text-slate-900">
-                  {request.title}
+                  {currentRequest.title}
                 </h3>
                 <span
                   className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-xs font-medium ring-1 ${statusCfg.bg} ${statusCfg.text}`}
@@ -302,14 +445,14 @@ export const ServiceRequestDetailsModal: FC<ServiceRequestDetailsModalProps> = (
                 <span
                   className={`inline-flex items-center rounded-md px-2 py-0.5 text-xs font-semibold ring-1 ${categoryCfg.bg} ${categoryCfg.text}`}
                 >
-                  {request.category}
+                  {currentRequest.category}
                 </span>
               </div>
               <p className="mt-1 text-xs text-slate-500">
-                Created on {formatDateTime(request.createdAt)}
-                {request.updatedAt && request.updatedAt !== request.createdAt && (
+                Created on {formatDateTime(currentRequest.createdAt)}
+                {currentRequest.updatedAt && currentRequest.updatedAt !== currentRequest.createdAt && (
                   <span className="ml-2 font-mono text-slate-400">
-                    (Updated {formatDateTime(request.updatedAt)})
+                    (Updated {formatDateTime(currentRequest.updatedAt)})
                   </span>
                 )}
               </p>
@@ -328,20 +471,145 @@ export const ServiceRequestDetailsModal: FC<ServiceRequestDetailsModalProps> = (
 
         {/* Modal Body */}
         <div className="overflow-y-auto p-6 space-y-6 flex-1">
+          {/* SECTION: ACTIVE SCHEDULE (Visible when status is SCHEDULED) */}
+          {isScheduled && (
+            <div className="rounded-xl border border-sky-200 bg-sky-50/50 p-4 shadow-2xs">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-sky-600 text-white shadow-2xs">
+                    <CalendarIcon className="h-4 w-4" />
+                  </div>
+                  <div>
+                    <h4 className="text-xs font-bold uppercase tracking-wider text-sky-900">
+                      Active Schedule Details
+                    </h4>
+                    <p className="text-[11px] text-sky-700">
+                      This service request is currently scheduled for dispatch.
+                    </p>
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() => fetchScheduleDetails(currentRequest.id)}
+                    className="text-xs font-medium text-sky-700 hover:text-sky-800 hover:underline cursor-pointer"
+                  >
+                    Refresh
+                  </button>
+                  {schedule && (
+                    <Button
+                      variant="danger"
+                      size="sm"
+                      leftIcon={<TrashIcon className="h-3.5 w-3.5" />}
+                      onClick={handleDeleteSchedule}
+                      isLoading={isDeletingSchedule}
+                      title="Delete this schedule and set status to ON_HOLD"
+                    >
+                      Delete Schedule
+                    </Button>
+                  )}
+                </div>
+              </div>
+
+              {loadingSchedule && (
+                <div className="mt-3 flex items-center justify-center rounded-lg border border-dashed border-sky-200 bg-white/70 p-5 text-center">
+                  <svg className="h-5 w-5 animate-spin text-sky-600" fill="none" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                  </svg>
+                  <span className="ml-2.5 text-xs font-medium text-slate-600">
+                    Retrieving schedule details...
+                  </span>
+                </div>
+              )}
+
+              {!loadingSchedule && schedule && (
+                <div className="mt-3 rounded-lg border border-sky-100 bg-white p-4 shadow-2xs space-y-3">
+                  <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-100 pb-3">
+                    <div className="flex items-center gap-2">
+                      <span className="font-mono text-xs font-bold text-sky-700 bg-sky-50 px-2 py-0.5 rounded border border-sky-200">
+                        Schedule #{schedule.id}
+                      </span>
+                      <span className="inline-flex items-center rounded-md bg-sky-50 px-2 py-0.5 text-xs font-semibold text-sky-700 ring-1 ring-sky-600/20">
+                        {schedule.status}
+                      </span>
+                    </div>
+
+                    <div className="text-xs font-medium text-slate-500">
+                      Duration:{' '}
+                      <strong className="text-slate-800">
+                        {calculateDuration(schedule.scheduledStart, schedule.scheduledEnd)}
+                      </strong>
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
+                    <div>
+                      <span className="text-[11px] font-medium text-slate-400">Scheduled Start</span>
+                      <p className="mt-0.5 font-semibold text-slate-800 font-mono">
+                        {formatDateTime(schedule.scheduledStart)}
+                      </p>
+                    </div>
+
+                    <div>
+                      <span className="text-[11px] font-medium text-slate-400">Scheduled End</span>
+                      <p className="mt-0.5 font-semibold text-slate-800 font-mono">
+                        {formatDateTime(schedule.scheduledEnd)}
+                      </p>
+                    </div>
+
+                    <div>
+                      <span className="text-[11px] font-medium text-slate-400">Assigned Technician</span>
+                      <p className="mt-0.5 font-semibold text-slate-800">
+                        {techDisplayName}
+                      </p>
+                      {assignedTechnician?.employee?.email && (
+                        <p className="text-[11px] text-slate-500">{assignedTechnician.employee.email}</p>
+                      )}
+                    </div>
+
+                    <div>
+                      <span className="text-[11px] font-medium text-slate-400">Technician Status</span>
+                      <p className="mt-0.5">
+                        <span className="inline-flex items-center gap-1 text-[11px] font-medium text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full ring-1 ring-emerald-600/20">
+                          {assignedTechnician?.availabilityStatus || assignedTechnician?.status || 'Scheduled'}
+                        </span>
+                      </p>
+                    </div>
+                  </div>
+
+                  {schedule.notes && (
+                    <div className="rounded-md bg-slate-50 p-2.5 text-xs text-slate-700 border border-slate-100">
+                      <span className="font-semibold text-slate-600 block mb-0.5">Schedule Notes:</span>
+                      {schedule.notes}
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {!loadingSchedule && !schedule && (
+                <div className="mt-3 rounded-lg border border-dashed border-sky-200 bg-white/70 p-3 text-xs text-sky-800 text-center">
+                  {scheduleError || 'Schedule details could not be retrieved from the server.'}
+                </div>
+              )}
+            </div>
+          )}
+
           {/* SECTION 1: Service Request Description & Overview */}
           <div className="rounded-xl border border-slate-200/90 bg-white p-4 shadow-2xs">
             <h4 className="text-xs font-bold uppercase tracking-wider text-slate-400">
               Request Details & Description
             </h4>
             <p className="mt-2 text-sm text-slate-800 leading-relaxed whitespace-pre-line">
-              {request.description || 'No detailed description provided.'}
+              {currentRequest.description || 'No detailed description provided.'}
             </p>
 
             <div className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-4 border-t border-slate-100 pt-3">
               <div>
                 <span className="text-[11px] font-medium text-slate-400">Category</span>
                 <p className="mt-0.5 text-xs font-semibold text-slate-800">
-                  {request.category}
+                  {currentRequest.category}
                 </p>
               </div>
 
@@ -355,14 +623,14 @@ export const ServiceRequestDetailsModal: FC<ServiceRequestDetailsModalProps> = (
               <div>
                 <span className="text-[11px] font-medium text-slate-400">Requested At</span>
                 <p className="mt-0.5 text-xs font-semibold text-slate-800">
-                  {formatDateTime(request.requestedAt)}
+                  {formatDateTime(currentRequest.requestedAt)}
                 </p>
               </div>
 
               <div>
                 <span className="text-[11px] font-medium text-slate-400">SLA Due Date</span>
                 <p className="mt-0.5 text-xs font-semibold text-slate-800">
-                  {request.slaDueAt ? formatDateTime(request.slaDueAt) : 'No SLA Target'}
+                  {currentRequest.slaDueAt ? formatDateTime(currentRequest.slaDueAt) : 'No SLA Target'}
                 </p>
               </div>
             </div>
@@ -374,12 +642,12 @@ export const ServiceRequestDetailsModal: FC<ServiceRequestDetailsModalProps> = (
               <div className="flex items-center gap-2">
                 <BuildingIcon className="h-4 w-4 text-teal-600" />
                 <h4 className="text-xs font-bold uppercase tracking-wider text-teal-900">
-                  Customer Information (ID #{request.customerId})
+                  Customer Information (ID #{currentRequest.customerId})
                 </h4>
               </div>
               <button
                 type="button"
-                onClick={() => fetchCustomerDetails(request.customerId)}
+                onClick={() => fetchCustomerDetails(currentRequest.customerId)}
                 className="text-xs font-medium text-teal-700 hover:text-teal-800 hover:underline cursor-pointer"
               >
                 Reload Customer
@@ -398,7 +666,7 @@ export const ServiceRequestDetailsModal: FC<ServiceRequestDetailsModalProps> = (
                   <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
                 </svg>
                 <span className="ml-2.5 text-xs font-medium text-slate-600">
-                  Fetching customer details (ID #{request.customerId})...
+                  Fetching customer details (ID #{currentRequest.customerId})...
                 </span>
               </div>
             )}
@@ -409,7 +677,7 @@ export const ServiceRequestDetailsModal: FC<ServiceRequestDetailsModalProps> = (
                 <span>{customerError}</span>
                 <button
                   type="button"
-                  onClick={() => fetchCustomerDetails(request.customerId)}
+                  onClick={() => fetchCustomerDetails(currentRequest.customerId)}
                   className="font-semibold underline hover:text-rose-800 ml-2 cursor-pointer"
                 >
                   Retry
@@ -470,12 +738,12 @@ export const ServiceRequestDetailsModal: FC<ServiceRequestDetailsModalProps> = (
                 <MapPinIcon className="h-4 w-4 text-indigo-600" />
                 <h4 className="text-xs font-bold uppercase tracking-wider text-indigo-900">
                   Service Location & Address Details{' '}
-                  {request.addressId ? `(Address ID #${request.addressId})` : ''}
+                  {currentRequest.addressId ? `(Address ID #${currentRequest.addressId})` : ''}
                 </h4>
               </div>
               <button
                 type="button"
-                onClick={() => fetchAddressDetails(request.customerId, request.addressId)}
+                onClick={() => fetchAddressDetails(currentRequest.customerId, currentRequest.addressId)}
                 className="text-xs font-medium text-indigo-700 hover:text-indigo-800 hover:underline cursor-pointer"
               >
                 Reload Address
@@ -505,7 +773,7 @@ export const ServiceRequestDetailsModal: FC<ServiceRequestDetailsModalProps> = (
                 <span>{addressError}</span>
                 <button
                   type="button"
-                  onClick={() => fetchAddressDetails(request.customerId, request.addressId)}
+                  onClick={() => fetchAddressDetails(currentRequest.customerId, currentRequest.addressId)}
                   className="font-semibold underline hover:text-rose-800 ml-2 cursor-pointer"
                 >
                   Retry
@@ -588,20 +856,20 @@ export const ServiceRequestDetailsModal: FC<ServiceRequestDetailsModalProps> = (
                 <div>
                   <p className="text-xs font-semibold text-slate-900">
                     {isEmployeeSource
-                      ? `Created by Employee #${request.createdBy ?? 'N/A'}`
-                      : `Created via ${request.source || 'Direct Client Request'}`}
+                      ? `Created by Employee #${currentRequest.createdBy ?? 'N/A'}`
+                      : `Created via ${currentRequest.source || 'Direct Client Request'}`}
                   </p>
                   <p className="text-[11px] text-slate-500">
-                    Timestamp: {formatDateTime(request.createdAt)}
+                    Timestamp: {formatDateTime(currentRequest.createdAt)}
                   </p>
                 </div>
               </div>
 
               {/* Action Button: Who created this request */}
-              {isEmployeeSource && request.createdBy && (
+              {isEmployeeSource && currentRequest.createdBy && (
                 <button
                   type="button"
-                  onClick={() => handleFetchCreatorEmployee(request.createdBy!)}
+                  onClick={() => handleFetchCreatorEmployee(currentRequest.createdBy!)}
                   disabled={loadingCreator}
                   className="inline-flex items-center gap-1.5 rounded-lg border border-blue-200 bg-white px-3 py-1.5 text-xs font-semibold text-blue-700 shadow-xs hover:bg-blue-50 hover:border-blue-300 transition-colors cursor-pointer disabled:opacity-60"
                   title="Retrieve full employee profile who created this request"
@@ -633,9 +901,22 @@ export const ServiceRequestDetailsModal: FC<ServiceRequestDetailsModalProps> = (
         {/* Modal Footer */}
         <div className="flex items-center justify-between border-t border-slate-100 bg-slate-50/75 px-6 py-4">
           <div className="text-xs text-slate-400 font-mono">
-            Organization ID: #{request.organizationId}
+            Organization ID: #{currentRequest.organizationId}
           </div>
           <div className="flex items-center gap-2">
+            {!isScheduled && onOpenScheduleModal && (
+              <Button
+                variant="outline"
+                size="sm"
+                leftIcon={<CalendarIcon className="h-3.5 w-3.5 text-sky-600" />}
+                onClick={() => {
+                  onClose()
+                  onOpenScheduleModal(currentRequest.id)
+                }}
+              >
+                Schedule Service
+              </Button>
+            )}
             {onEditRequest && (
               <Button
                 variant="outline"
@@ -643,7 +924,7 @@ export const ServiceRequestDetailsModal: FC<ServiceRequestDetailsModalProps> = (
                 leftIcon={<PencilIcon className="h-3.5 w-3.5" />}
                 onClick={() => {
                   onClose()
-                  onEditRequest(request)
+                  onEditRequest(currentRequest)
                 }}
               >
                 Edit Request
