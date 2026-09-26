@@ -27,28 +27,32 @@ export const navigationItems: NavigationItem[] = [
     label: 'Technicians',
     path: '/technicians',
     icon: WrenchIcon,
+    roles: ['OWNER', 'ORG_OWNER', 'ADMIN', 'ORG_ADMIN', 'MANAGER'],
   },
   {
     label: 'Customers',
     path: '/customers',
     icon: CustomersIcon,
+    roles: ['OWNER', 'ORG_OWNER', 'ADMIN', 'ORG_ADMIN', 'MANAGER'],
     badge: '7',
   },
   {
     label: 'Service Requests',
     path: '/service-requests',
     icon: ServiceRequestIcon,
+    roles: ['OWNER', 'ORG_OWNER', 'ADMIN', 'ORG_ADMIN', 'MANAGER', 'TECHNICIAN'],
   },
   {
     label: 'Schedules',
     path: '/schedules',
     icon: CalendarIcon,
-    roles: ['OWNER', 'ORG_OWNER', 'ADMIN', 'ORG_ADMIN', 'MANAGER'],
+    roles: ['OWNER', 'ORG_OWNER', 'ADMIN', 'ORG_ADMIN', 'MANAGER', 'TECHNICIAN'],
   },
   {
     label: 'Skills',
     path: '/skills',
     icon: SkillsIcon,
+    roles: ['OWNER', 'ORG_OWNER', 'ADMIN', 'ORG_ADMIN', 'MANAGER'],
   },
 ]
 
@@ -61,6 +65,7 @@ export const Sidebar: FC<SidebarProps> = ({ isOpen, onClose }) => {
   const { currentUser, logout } = useCurrentUser()
   const location = useLocation()
   const isCustomer = currentUser.role === 'CUSTOMER'
+  const isTechnician = currentUser.role === 'TECHNICIAN'
 
   // Close mobile sidebar on route change
   useEffect(() => {
@@ -78,7 +83,10 @@ export const Sidebar: FC<SidebarProps> = ({ isOpen, onClose }) => {
     return () => window.removeEventListener('keydown', handleKeyDown)
   }, [isOpen, onClose])
 
-  // Filter navigation items based on current user role: CUSTOMER only gets Services tab
+  // Filter navigation items based on current user role:
+  // - CUSTOMER only gets Services tab
+  // - TECHNICIAN only gets Service Requests and Schedules tabs (nothing else)
+  // - Other roles get tabs matching their role permissions
   const visibleNavItems = isCustomer
     ? [
         {
@@ -87,9 +95,22 @@ export const Sidebar: FC<SidebarProps> = ({ isOpen, onClose }) => {
           icon: ServiceRequestIcon,
         },
       ]
-    : navigationItems.filter(
-        (item) => !item.roles || item.roles.includes(currentUser.role),
-      )
+    : isTechnician
+      ? [
+          {
+            label: 'Service Requests',
+            path: '/service-requests',
+            icon: ServiceRequestIcon,
+          },
+          {
+            label: 'Schedules',
+            path: '/schedules',
+            icon: CalendarIcon,
+          },
+        ]
+      : navigationItems.filter(
+          (item) => !item.roles || item.roles.includes(currentUser.role),
+        )
 
   const roleBadgeStyles: Record<string, string> = {
     CUSTOMER: 'bg-emerald-50 text-emerald-700 ring-emerald-700/20',
@@ -180,27 +201,30 @@ export const Sidebar: FC<SidebarProps> = ({ isOpen, onClose }) => {
 
       {/* Bottom Section / Secondary Navigation & User Profile */}
       <div className="border-t border-slate-200/80 p-3 space-y-2">
-        <NavLink
-          to="/settings"
-          className={({ isActive }) =>
-            `group flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors ${
-              isActive
-                ? 'bg-blue-50 text-blue-700 font-semibold ring-1 ring-blue-700/10'
-                : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900'
-            }`
-          }
-        >
-          {({ isActive }) => (
-            <>
-              <SettingsIcon
-                className={`h-5 w-5 shrink-0 ${
-                  isActive ? 'text-blue-600' : 'text-slate-400 group-hover:text-slate-600'
-                }`}
-              />
-              <span>Settings</span>
-            </>
-          )}
-        </NavLink>
+        {/* Settings is hidden for technicians: they can see service requests and schedules nothing else */}
+        {!isTechnician && (
+          <NavLink
+            to="/settings"
+            className={({ isActive }) =>
+              `group flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors ${
+                isActive
+                  ? 'bg-blue-50 text-blue-700 font-semibold ring-1 ring-blue-700/10'
+                  : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900'
+              }`
+            }
+          >
+            {({ isActive }) => (
+              <>
+                <SettingsIcon
+                  className={`h-5 w-5 shrink-0 ${
+                    isActive ? 'text-blue-600' : 'text-slate-400 group-hover:text-slate-600'
+                  }`}
+                />
+                <span>Settings</span>
+              </>
+            )}
+          </NavLink>
+        )}
 
         {/* User Profile Card */}
         <div className="rounded-lg border border-slate-200/80 bg-slate-50/70 p-3">

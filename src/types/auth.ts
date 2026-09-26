@@ -106,10 +106,33 @@ export interface ResendEmailResponse {
   email: string
 }
 
-export interface ResetPasswordPayload {
+export type UserType = 'EMPLOYEE' | 'CUSTOMER'
+
+export interface VerifyResetTokenResponse {
+  valid: boolean
   email: string
-  token?: string
+  userType: UserType
+  message: string
+}
+
+export interface ResetPasswordPayload {
+  token: string
+  password: string
+  // Optional for backward compatibility
+  email?: string
   newPassword?: string
+}
+
+export interface ResetPasswordResponse {
+  message: string
+}
+
+export interface ForgotPasswordResponse {
+  email: string
+}
+
+export interface VerifyEmailResponse {
+  message: string
 }
 
 export interface RefreshTokenPayload {

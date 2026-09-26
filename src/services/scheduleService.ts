@@ -5,9 +5,13 @@ import type {
   CreateSchedulePayload,
   Schedule,
   UpdateSchedulePayload,
+  UpdateTechnicianScheduleStatusPayload,
 } from '../types/schedule'
 
 class ScheduleService {
+  /**
+   * List all schedules in the organization (Manager / Admin).
+   */
   async getSchedules(): Promise<ApiResponse<Schedule[]>> {
     try {
       const response: AxiosResponse = await protectedApi.get('/schedules')
@@ -23,6 +27,52 @@ class ScheduleService {
       })
     } catch (err) {
       return ApiResponse.error<Schedule[]>(err)
+    }
+  }
+
+  /**
+   * Get assigned schedules with customer and address details (Technician).
+   * Optional status filter: SCHEDULED, DISPATCHED, IN_PROGRESS, COMPLETED, CANCELLED.
+   */
+  async getTechnicianSchedules(status?: string): Promise<ApiResponse<Schedule[]>> {
+    try {
+      const response: AxiosResponse = await protectedApi.get('/schedules/technician', {
+        params: status && status !== 'ALL' ? { status } : undefined,
+      })
+      let list: Schedule[] = []
+      if (Array.isArray(response.data)) {
+        list = response.data
+      } else if (response.data && Array.isArray(response.data.data)) {
+        list = response.data.data
+      }
+      return ApiResponse.success<Schedule[]>({
+        ...response,
+        data: list,
+      })
+    } catch (err) {
+      return ApiResponse.error<Schedule[]>(err)
+    }
+  }
+
+  /**
+   * Update technician schedule status and notes (Technician).
+   */
+  async updateTechnicianScheduleStatus(
+    id: number | string,
+    payload: UpdateTechnicianScheduleStatusPayload,
+  ): Promise<ApiResponse<Schedule>> {
+    try {
+      const response: AxiosResponse = await protectedApi.patch(
+        `/schedules/technician/${id}/status`,
+        payload,
+      )
+      const data: Schedule = response.data?.data || response.data
+      return ApiResponse.success<Schedule>({
+        ...response,
+        data,
+      })
+    } catch (err) {
+      return ApiResponse.error<Schedule>(err)
     }
   }
 

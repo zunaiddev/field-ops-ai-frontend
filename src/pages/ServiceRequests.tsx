@@ -29,6 +29,8 @@ export const ServiceRequests: FC = () => {
     return <CustomerServicesView />
   }
 
+  const isTechnician = currentUser.role === 'TECHNICIAN'
+
   const [requests, setRequests] = useState<ServiceRequest[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -208,24 +210,36 @@ export const ServiceRequests: FC = () => {
               <TicketIcon className="h-5 w-5" />
             </div>
             <div>
-              <h1 className="text-xl font-bold tracking-tight text-slate-900 sm:text-2xl">
-                Service Requests
-              </h1>
+              <div className="flex items-center gap-2">
+                <h1 className="text-xl font-bold tracking-tight text-slate-900 sm:text-2xl">
+                  Service Requests
+                </h1>
+                {isTechnician && (
+                  <span className="rounded-md bg-amber-50 px-2 py-0.5 text-xs font-semibold text-amber-700 ring-1 ring-amber-700/20">
+                    Technician View
+                  </span>
+                )}
+              </div>
               <p className="text-xs text-slate-500 sm:text-sm">
-                Manage incoming customer service tickets, dispatch inquiries, and maintenance logs.
+                {isTechnician
+                  ? 'View assigned incoming service requests and job specifications.'
+                  : 'Manage incoming customer service tickets, dispatch inquiries, and maintenance logs.'}
               </p>
             </div>
           </div>
         </div>
 
-        <Button
-          variant="primary"
-          size="md"
-          leftIcon={<PlusIcon className="h-4 w-4" />}
-          onClick={() => setIsCreateModalOpen(true)}
-        >
-          Create Request
-        </Button>
+        {/* Create Request is hidden for technicians */}
+        {!isTechnician && (
+          <Button
+            variant="primary"
+            size="md"
+            leftIcon={<PlusIcon className="h-4 w-4" />}
+            onClick={() => setIsCreateModalOpen(true)}
+          >
+            Create Request
+          </Button>
+        )}
       </div>
 
       {/* Filter and Search Bar */}
@@ -406,8 +420,8 @@ export const ServiceRequests: FC = () => {
         <ServiceRequestTable
           requests={filteredRequests}
           onViewRequest={handleOpenViewModal}
-          onEditRequest={handleOpenEditModal}
-          onViewSchedule={handleViewSchedule}
+          onEditRequest={isTechnician ? undefined : handleOpenEditModal}
+          onViewSchedule={isTechnician ? undefined : handleViewSchedule}
         />
       )}
 
@@ -460,22 +474,31 @@ export const ServiceRequests: FC = () => {
         isOpen={isViewModalOpen}
         request={selectedRequest}
         onClose={handleCloseViewModal}
-        onEditRequest={(req) => {
-          handleCloseViewModal()
-          handleOpenEditModal(req)
-        }}
+        onEditRequest={
+          isTechnician
+            ? undefined
+            : (req) => {
+                handleCloseViewModal()
+                handleOpenEditModal(req)
+              }
+        }
         onRequestUpdated={handleRequestUpdated}
-        onOpenScheduleModal={(serviceReqId) => {
-          handleCloseViewModal()
-          setScheduleServiceRequestId(serviceReqId)
-          setIsCreateScheduleOpen(true)
-        }}
+        onOpenScheduleModal={
+          isTechnician
+            ? undefined
+            : (serviceReqId) => {
+                handleCloseViewModal()
+                setScheduleServiceRequestId(serviceReqId)
+                setIsCreateScheduleOpen(true)
+              }
+        }
       />
 
       {/* Modal: Schedule Details */}
       <ScheduleDetailsModal
         isOpen={isScheduleDetailsOpen}
         schedule={selectedSchedule}
+        isTechnician={isTechnician}
         onClose={() => {
           setIsScheduleDetailsOpen(false)
           setSelectedSchedule(null)
@@ -483,31 +506,37 @@ export const ServiceRequests: FC = () => {
         onScheduleDeleted={handleScheduleDeleted}
       />
 
-      {/* Modal: Create Schedule */}
-      <CreateScheduleModal
-        isOpen={isCreateScheduleOpen}
-        initialServiceRequestId={scheduleServiceRequestId || undefined}
-        onClose={() => {
-          setIsCreateScheduleOpen(false)
-          setScheduleServiceRequestId(null)
-        }}
-        onScheduleCreated={handleScheduleCreated}
-      />
+      {/* Modal: Create Schedule (Manager only) */}
+      {!isTechnician && (
+        <CreateScheduleModal
+          isOpen={isCreateScheduleOpen}
+          initialServiceRequestId={scheduleServiceRequestId || undefined}
+          onClose={() => {
+            setIsCreateScheduleOpen(false)
+            setScheduleServiceRequestId(null)
+          }}
+          onScheduleCreated={handleScheduleCreated}
+        />
+      )}
 
-      {/* Modal: Create Request */}
-      <CreateServiceRequestModal
-        isOpen={isCreateModalOpen}
-        onClose={() => setIsCreateModalOpen(false)}
-        onRequestCreated={handleRequestCreated}
-      />
+      {/* Modal: Create Request (Manager only) */}
+      {!isTechnician && (
+        <CreateServiceRequestModal
+          isOpen={isCreateModalOpen}
+          onClose={() => setIsCreateModalOpen(false)}
+          onRequestCreated={handleRequestCreated}
+        />
+      )}
 
       {/* Modal: Update Request */}
-      <UpdateServiceRequestModal
-        isOpen={isEditModalOpen}
-        request={editingRequest}
-        onClose={handleCloseEditModal}
-        onRequestUpdated={handleRequestUpdated}
-      />
+      {!isTechnician && (
+        <UpdateServiceRequestModal
+          isOpen={isEditModalOpen}
+          request={editingRequest}
+          onClose={handleCloseEditModal}
+          onRequestUpdated={handleRequestUpdated}
+        />
+      )}
     </div>
   )
 }

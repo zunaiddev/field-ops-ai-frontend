@@ -206,7 +206,7 @@ export const Login: FC<LoginProps> = ({ mode }) => {
           />
 
           <Link
-            to="/auth/forgot-password"
+            to={isEmployee ? '/auth/forgot-password?type=employee' : '/auth/forgot-password?type=customer'}
             className="text-xs font-medium text-blue-600 hover:text-blue-700 hover:underline sm:text-sm"
           >
             Forgot password?

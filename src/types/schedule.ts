@@ -1,6 +1,7 @@
 export const ScheduleStatus = {
   SCHEDULED: 'SCHEDULED',
-  EN_ROUTE: 'EN_ROUTE',
+  DISPATCHED: 'DISPATCHED',
+  EN_ROUTE: 'DISPATCHED',
   IN_PROGRESS: 'IN_PROGRESS',
   COMPLETED: 'COMPLETED',
   CANCELLED: 'CANCELLED',
@@ -9,11 +10,39 @@ export const ScheduleStatus = {
 export type ScheduleStatus =
   | (typeof ScheduleStatus)[keyof typeof ScheduleStatus]
   | 'SCHEDULED'
-  | 'EN_ROUTE'
+  | 'DISPATCHED'
   | 'IN_PROGRESS'
   | 'COMPLETED'
   | 'CANCELLED'
   | string
+
+export interface CustomerSummary {
+  id: number
+  organizationId?: number
+  name: string
+  phone?: string
+  email: string
+}
+
+export interface AddressSummary {
+  id: number
+  customerId?: number
+  addressLine1: string
+  addressLine2?: string
+  city: string
+  state: string
+  postalCode: string
+  country: string
+}
+
+export interface ScheduleServiceRequestSummary {
+  id: number
+  title: string
+  description?: string
+  category?: string
+  priority?: string
+  status?: string
+}
 
 export interface Schedule {
   id: number
@@ -24,6 +53,9 @@ export interface Schedule {
   scheduledEnd: string
   status: ScheduleStatus
   notes?: string | null
+  customer?: CustomerSummary
+  address?: AddressSummary
+  serviceRequest?: ScheduleServiceRequestSummary | any
   createdAt: string
   updatedAt: string
   [key: string]: unknown
@@ -42,6 +74,11 @@ export interface UpdateSchedulePayload {
   scheduledStart?: string
   scheduledEnd?: string
   status?: ScheduleStatus
+  notes?: string
+}
+
+export interface UpdateTechnicianScheduleStatusPayload {
+  status: ScheduleStatus | string
   notes?: string
 }
 

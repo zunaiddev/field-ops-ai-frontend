@@ -2,6 +2,7 @@ import {protectedApi, publicApi} from '../api/axios'
 import {ApiResponse} from '../api/ApiResponse'
 import type {
   EmployeeProfileResponse,
+  ForgotPasswordResponse,
   LoginFormValues,
   LoginPayload,
   LoginResponse,
@@ -10,7 +11,10 @@ import type {
   RegisterResponse,
   ResendEmailResponse,
   ResetPasswordPayload,
-} from '../types/auth';
+  ResetPasswordResponse,
+  VerifyEmailResponse,
+  VerifyResetTokenResponse,
+} from '../types/auth'
 
 class AuthService {
   async orgRegistration(payload: OrganizationRegistrationPayload): Promise<ApiResponse<RegisterResponse>> {
@@ -72,7 +76,7 @@ class AuthService {
     try {
       const response = await publicApi.get<ResendEmailResponse>('/auth/resend-email', {
         params: { email },
-      });
+      })
 
       return ApiResponse.success<ResendEmailResponse>(response)
     } catch (error) {
@@ -99,17 +103,85 @@ class AuthService {
     }
   }
 
-  async resetPassword(payload: ResetPasswordPayload): Promise<ApiResponse<{ success: boolean; message: string }>> {
+  /**
+   * Request password reset link (Forgot Password).
+   * - Employee/General: POST /auth/forgot-password?email=...
+   * - Customer: POST /auth/forgot-password/customer?email=...
+   */
+  async forgotPassword(
+    email: string,
+    isCustomer: boolean = false,
+  ): Promise<ApiResponse<ForgotPasswordResponse>> {
     try {
-      const response = await protectedApi.post<{ success: boolean; message: string }>(
-          '/auth/password/reset',
-          payload,
+      const endpoint = isCustomer ? '/auth/forgot-password/customer' : '/auth/forgot-password'
+      const response = await publicApi.post<ForgotPasswordResponse>(
+        endpoint,
+        { email },
+        {
+          params: { email },
+        },
       )
-      return ApiResponse.success<{ success: boolean; message: string }>(response)
+      return ApiResponse.success<ForgotPasswordResponse>(response)
     } catch (error) {
-      return ApiResponse.error<{ success: boolean; message: string }>(error)
+      return ApiResponse.error<ForgotPasswordResponse>(error)
+    }
+  }
+
+  /**
+   * Verify password reset token on page mount.
+   * GET /verify/reset-password?token=...
+   */
+  async verifyResetPasswordToken(
+    token: string,
+  ): Promise<ApiResponse<VerifyResetTokenResponse>> {
+    try {
+      const response = await publicApi.get<VerifyResetTokenResponse>(
+        '/verify/reset-password',
+        {
+          params: { token },
+        },
+      )
+      return ApiResponse.success<VerifyResetTokenResponse>(response)
+    } catch (error) {
+      return ApiResponse.error<VerifyResetTokenResponse>(error)
+    }
+  }
+
+  /**
+   * Submit new password to reset account password.
+   * POST /verify/reset-password { token, password }
+   */
+  async resetPassword(
+    payload: ResetPasswordPayload,
+  ): Promise<ApiResponse<ResetPasswordResponse>> {
+    try {
+      const response = await publicApi.post<ResetPasswordResponse>(
+        '/verify/reset-password',
+        {
+          token: payload.token,
+          password: payload.password || payload.newPassword || '',
+        },
+      )
+      return ApiResponse.success<ResetPasswordResponse>(response)
+    } catch (error) {
+      return ApiResponse.error<ResetPasswordResponse>(error)
+    }
+  }
+
+  /**
+   * Verify email from signup verification link.
+   * GET /verify/email?token=...
+   */
+  async verifyEmail(token: string): Promise<ApiResponse<VerifyEmailResponse>> {
+    try {
+      const response = await publicApi.get<VerifyEmailResponse>('/verify/email', {
+        params: { token },
+      })
+      return ApiResponse.success<VerifyEmailResponse>(response)
+    } catch (error) {
+      return ApiResponse.error<VerifyEmailResponse>(error)
     }
   }
 }
 
-export default new AuthService();
+export default new AuthService()

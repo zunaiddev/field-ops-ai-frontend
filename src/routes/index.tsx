@@ -1,6 +1,9 @@
 import { createBrowserRouter, Navigate, RouterProvider, type RouteObject } from 'react-router-dom'
 import Login from '../pages/Login'
 import Signup from '../pages/Signup'
+import ForgotPassword from '../pages/ForgotPassword'
+import ResetPassword from '../pages/ResetPassword'
+import VerifyEmail from '../pages/VerifyEmail'
 import PublicRoute from './guards/PublicRoute'
 import ProtectedRoute from './guards/ProtectedRoute'
 import EmployeeRoute from './guards/EmployeeRoute'
@@ -21,30 +24,50 @@ function FallbackRedirect() {
   return <Navigate to="/service-requests" replace />
 }
 
+const STAFF_ADMIN_ROLES = ['OWNER', 'ORG_OWNER', 'ADMIN', 'ORG_ADMIN', 'MANAGER']
+const SCHEDULE_ROLES = ['OWNER', 'ORG_OWNER', 'ADMIN', 'ORG_ADMIN', 'MANAGER', 'TECHNICIAN']
+const SETTINGS_ROLES = ['OWNER', 'ORG_OWNER', 'ADMIN', 'ORG_ADMIN', 'MANAGER', 'CUSTOMER']
+
 const routes: RouteObject[] = [
   {
     path: '/auth',
-    element: <PublicRoute />,
     children: [
       {
-        index: true,
-        element: <Navigate to="/auth/login" replace />,
+        element: <PublicRoute />,
+        children: [
+          {
+            index: true,
+            element: <Navigate to="/auth/login" replace />,
+          },
+          {
+            path: 'login',
+            element: <Login mode="customer" />,
+          },
+          {
+            path: 'login/employee',
+            element: <Login mode="employee" />,
+          },
+          {
+            path: 'login/customer',
+            element: <Navigate to="/auth/login" replace />,
+          },
+          {
+            path: 'signup',
+            element: <Signup />,
+          },
+          {
+            path: 'forgot-password',
+            element: <ForgotPassword />,
+          },
+        ],
       },
       {
-        path: 'login',
-        element: <Login mode="customer" />,
+        path: 'reset-password',
+        element: <ResetPassword />,
       },
       {
-        path: 'login/employee',
-        element: <Login mode="employee" />,
-      },
-      {
-        path: 'login/customer',
-        element: <Navigate to="/auth/login" replace />,
-      },
-      {
-        path: 'signup',
-        element: <Signup />,
+        path: 'verify-email',
+        element: <VerifyEmail />,
       },
     ],
   },
@@ -67,6 +90,18 @@ const routes: RouteObject[] = [
     ],
   },
   {
+    path: '/forgot-password',
+    element: <ForgotPassword />,
+  },
+  {
+    path: '/reset-password',
+    element: <ResetPassword />,
+  },
+  {
+    path: '/verify-email',
+    element: <VerifyEmail />,
+  },
+  {
     path: '/',
     element: (
       <ProtectedRoute>
@@ -81,7 +116,7 @@ const routes: RouteObject[] = [
       {
         path: 'employees',
         element: (
-          <EmployeeRoute>
+          <EmployeeRoute allowedRoles={STAFF_ADMIN_ROLES}>
             <Employees />
           </EmployeeRoute>
         ),
@@ -89,7 +124,7 @@ const routes: RouteObject[] = [
       {
         path: 'technicians',
         element: (
-          <EmployeeRoute>
+          <EmployeeRoute allowedRoles={STAFF_ADMIN_ROLES}>
             <Technicians />
           </EmployeeRoute>
         ),
@@ -97,38 +132,42 @@ const routes: RouteObject[] = [
       {
         path: 'customers',
         element: (
-          <EmployeeRoute>
+          <EmployeeRoute allowedRoles={STAFF_ADMIN_ROLES}>
             <Customers />
           </EmployeeRoute>
         ),
       },
       {
         path: 'service-requests',
-        element: <ServiceRequests />,
+        element: <ServiceRequests />
       },
       {
         path: 'schedules',
         element: (
-          <EmployeeRoute>
+          <EmployeeRoute allowedRoles={SCHEDULE_ROLES}>
             <Schedules />
           </EmployeeRoute>
         ),
       },
       {
         path: 'services',
-        element: <Navigate to="/service-requests" replace />,
+        element: <Navigate to="/service-requests" replace />
       },
       {
         path: 'skills',
         element: (
-          <EmployeeRoute>
+          <EmployeeRoute allowedRoles={STAFF_ADMIN_ROLES}>
             <Skills />
           </EmployeeRoute>
         ),
       },
       {
         path: 'settings',
-        element: <Settings />,
+        element: (
+          <EmployeeRoute allowedRoles={SETTINGS_ROLES}>
+            <Settings />
+          </EmployeeRoute>
+        ),
       },
     ],
   },

@@ -36,7 +36,8 @@ export class ApiResponse<T = unknown> {
   static error<T>(err: unknown): ApiResponse<T> {
     let status = 500
     let message = 'An unexpected error occurred'
-    let code: string = "UNKNOWN";
+    let code: string = 'UNKNOWN'
+    let errorCode: string | undefined = undefined
 
     if (typeof err === 'object' && err !== null && 'isAxiosError' in err) {
       const axiosErr = err as AxiosError<Record<string, unknown>>
@@ -47,12 +48,17 @@ export class ApiResponse<T = unknown> {
         if (typeof responseData === 'string') {
           message = responseData
         } else if (typeof responseData === 'object') {
-          message =
-            (responseData.message as string) ||
-            (responseData.error as string) ||
-            axiosErr.message ||
-            'Request failed'
-          code = responseData.code as string;
+          if (Array.isArray(responseData.message)) {
+            message = responseData.message.join(', ')
+          } else {
+            message =
+              (responseData.message as string) ||
+              (responseData.error as string) ||
+              axiosErr.message ||
+              'Request failed'
+          }
+          code = (responseData.code as string) || (responseData.errorCode as string) || 'UNKNOWN'
+          errorCode = (responseData.errorCode as string) || (responseData.code as string)
         }
       } else if (axiosErr.message) {
         message = axiosErr.message
@@ -70,9 +76,10 @@ export class ApiResponse<T = unknown> {
       {
         message,
         code,
+        errorCode,
       },
     )
   }
 }
 
-export default ApiResponse;
+export default ApiResponse

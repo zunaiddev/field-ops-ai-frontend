@@ -5,8 +5,13 @@ import {
   CalendarIcon,
   ClockIcon,
   CloseIcon,
+  MailIcon,
+  MapPinIcon,
+  PencilIcon,
+  PhoneIcon,
   TicketIcon,
   TrashIcon,
+  UsersIcon,
   WrenchIcon,
 } from '../icons'
 import type { Schedule } from '../../types/schedule'
@@ -21,7 +26,9 @@ interface ScheduleDetailsModalProps {
   schedule: Schedule | null
   isOpen: boolean
   onClose: () => void
+  isTechnician?: boolean
   onScheduleDeleted?: (scheduleId: number) => void
+  onUpdateStatus?: (schedule: Schedule) => void
 }
 
 const statusBadgeStyles: Record<string, string> = {
@@ -71,7 +78,9 @@ export const ScheduleDetailsModal: FC<ScheduleDetailsModalProps> = ({
   schedule,
   isOpen,
   onClose,
+  isTechnician = false,
   onScheduleDeleted,
+  onUpdateStatus,
 }) => {
   const { confirm } = useAlertModal()
   const [isDeleting, setIsDeleting] = useState(false)
@@ -86,10 +95,20 @@ export const ScheduleDetailsModal: FC<ScheduleDetailsModalProps> = ({
       return
     }
 
+    // If schedule already has serviceRequest embedded (e.g. from technician endpoint)
+    if (schedule.serviceRequest) {
+      setServiceRequest(schedule.serviceRequest)
+    }
+
+    // If technician mode, technician doesn't need to fetch technician list or manager endpoints
+    if (isTechnician) {
+      return
+    }
+
     let isMounted = true
     setIsLoadingDetails(true)
 
-    // Load related service request and technician info in parallel
+    // Load related service request and technician info in parallel for manager
     Promise.allSettled([
       serviceRequestService.getServiceRequestById(schedule.serviceRequestId),
       technicianService.getTechnicians(),
@@ -116,7 +135,7 @@ export const ScheduleDetailsModal: FC<ScheduleDetailsModalProps> = ({
     return () => {
       isMounted = false
     }
-  }, [isOpen, schedule])
+  }, [isOpen, schedule, isTechnician])
 
   // ESC to close
   useEffect(() => {
@@ -181,6 +200,19 @@ export const ScheduleDetailsModal: FC<ScheduleDetailsModalProps> = ({
     ? `${technician.employee.firstName || ''} ${technician.employee.lastName || ''}`.trim() ||
       `Technician #${schedule.technicianId}`
     : `Technician #${schedule.technicianId}`
+
+  // Customer and address details (available in technician schedules response)
+  const cust = schedule.customer
+  const addr = schedule.address
+  const formattedAddress = addr
+    ? [addr.addressLine1, addr.addressLine2, addr.city, addr.state, addr.postalCode, addr.country]
+        .filter(Boolean)
+        .join(', ')
+    : null
+
+  const mapsUrl = formattedAddress
+    ? `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(formattedAddress)}`
+    : null
 
   return (
     <div
@@ -267,32 +299,96 @@ export const ScheduleDetailsModal: FC<ScheduleDetailsModalProps> = ({
             </div>
           </div>
 
-          {/* Assigned Technician Card */}
-          <div className="rounded-xl border border-slate-200 bg-white p-4 space-y-2">
-            <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-slate-700">
-              <WrenchIcon className="h-4 w-4 text-slate-500" />
-              Assigned Technician
-            </div>
-            <div className="flex items-center justify-between pt-1">
-              <div className="flex items-center gap-3">
-                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-amber-50 text-amber-700 font-bold text-sm border border-amber-200">
-                  <WrenchIcon className="h-5 w-5" />
-                </div>
-                <div>
-                  <h4 className="text-xs font-bold text-slate-900">{techDisplayName}</h4>
-                  <p className="text-[11px] text-slate-500">
-                    Technician ID: #{schedule.technicianId}
-                    {technician?.employee?.email ? ` • ${technician.employee.email}` : ''}
-                  </p>
+          {/* Customer Information Card (if available) */}
+          {cust && (
+            <div className="rounded-xl border border-slate-200 bg-white p-4 space-y-2">
+              <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-slate-700">
+                <UsersIcon className="h-4 w-4 text-slate-500" />
+                Customer Contact
+              </div>
+              <div className="pt-1 space-y-1.5 text-xs">
+                <p className="font-bold text-slate-900">{cust.name}</p>
+                <div className="flex flex-wrap items-center gap-4 text-slate-600">
+                  {cust.phone && (
+                    <a
+                      href={`tel:${cust.phone}`}
+                      className="inline-flex items-center gap-1.5 text-blue-600 hover:text-blue-800 hover:underline font-medium"
+                    >
+                      <PhoneIcon className="h-3.5 w-3.5" />
+                      <span>{cust.phone}</span>
+                    </a>
+                  )}
+                  {cust.email && (
+                    <a
+                      href={`mailto:${cust.email}`}
+                      className="inline-flex items-center gap-1.5 text-slate-600 hover:text-slate-900 hover:underline"
+                    >
+                      <MailIcon className="h-3.5 w-3.5 text-slate-400" />
+                      <span>{cust.email}</span>
+                    </a>
+                  )}
                 </div>
               </div>
-              {technician?.availabilityStatus && (
-                <span className="rounded bg-slate-100 px-2 py-0.5 text-[10px] font-mono font-medium text-slate-700">
-                  {technician.availabilityStatus}
-                </span>
-              )}
             </div>
-          </div>
+          )}
+
+          {/* Site Address Card (if available) */}
+          {addr && (
+            <div className="rounded-xl border border-slate-200 bg-white p-4 space-y-2">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-slate-700">
+                  <MapPinIcon className="h-4 w-4 text-slate-500" />
+                  Service Site Location
+                </div>
+                {mapsUrl && (
+                  <a
+                    href={mapsUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-1 text-[11px] font-semibold text-emerald-600 hover:text-emerald-800 hover:underline"
+                  >
+                    Open in Maps
+                  </a>
+                )}
+              </div>
+              <div className="pt-1 text-xs text-slate-700 space-y-0.5">
+                <p className="font-medium text-slate-900">{addr.addressLine1}</p>
+                {addr.addressLine2 && <p>{addr.addressLine2}</p>}
+                <p className="text-slate-500">
+                  {[addr.city, addr.state, addr.postalCode, addr.country].filter(Boolean).join(', ')}
+                </p>
+              </div>
+            </div>
+          )}
+
+          {/* Assigned Technician Card (manager view) */}
+          {!isTechnician && (
+            <div className="rounded-xl border border-slate-200 bg-white p-4 space-y-2">
+              <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-slate-700">
+                <WrenchIcon className="h-4 w-4 text-slate-500" />
+                Assigned Technician
+              </div>
+              <div className="flex items-center justify-between pt-1">
+                <div className="flex items-center gap-3">
+                  <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-amber-50 text-amber-700 font-bold text-sm border border-amber-200">
+                    <WrenchIcon className="h-5 w-5" />
+                  </div>
+                  <div>
+                    <h4 className="text-xs font-bold text-slate-900">{techDisplayName}</h4>
+                    <p className="text-[11px] text-slate-500">
+                      Technician ID: #{schedule.technicianId}
+                      {technician?.employee?.email ? ` • ${technician.employee.email}` : ''}
+                    </p>
+                  </div>
+                </div>
+                {technician?.availabilityStatus && (
+                  <span className="rounded bg-slate-100 px-2 py-0.5 text-[10px] font-mono font-medium text-slate-700">
+                    {technician.availabilityStatus}
+                  </span>
+                )}
+              </div>
+            </div>
+          )}
 
           {/* Associated Service Request Card */}
           <div className="rounded-xl border border-slate-200 bg-white p-4 space-y-2">
@@ -316,13 +412,15 @@ export const ScheduleDetailsModal: FC<ScheduleDetailsModalProps> = ({
                     {serviceRequest.status}
                   </span>
                 </div>
-                <p className="text-xs text-slate-600 line-clamp-2">
-                  {serviceRequest.description}
-                </p>
+                {serviceRequest.description && (
+                  <p className="text-xs text-slate-600 line-clamp-2">
+                    {serviceRequest.description}
+                  </p>
+                )}
                 <div className="flex items-center gap-3 text-[11px] text-slate-400 pt-1">
-                  <span>Category: {serviceRequest.category}</span>
-                  <span>•</span>
-                  <span>Priority: {serviceRequest.priority}</span>
+                  {serviceRequest.category && <span>Category: {serviceRequest.category}</span>}
+                  {serviceRequest.category && serviceRequest.priority && <span>•</span>}
+                  {serviceRequest.priority && <span>Priority: {serviceRequest.priority}</span>}
                 </div>
               </div>
             ) : (
@@ -345,22 +443,53 @@ export const ScheduleDetailsModal: FC<ScheduleDetailsModalProps> = ({
           )}
         </div>
 
-        {/* Footer with Delete and Close */}
+        {/* Footer */}
         <div className="flex items-center justify-between border-t border-slate-100 bg-slate-50/75 px-6 py-4">
-          <Button
-            type="button"
-            variant="danger"
-            size="sm"
-            leftIcon={<TrashIcon className="h-4 w-4" />}
-            onClick={handleDeleteSchedule}
-            isLoading={isDeleting}
-          >
-            Delete Schedule
-          </Button>
+          {isTechnician ? (
+            <>
+              {onUpdateStatus && (
+                <Button
+                  type="button"
+                  variant="primary"
+                  size="sm"
+                  leftIcon={<PencilIcon className="h-4 w-4" />}
+                  onClick={() => {
+                    onClose()
+                    onUpdateStatus(schedule)
+                  }}
+                  disabled={schedule.status === 'CANCELLED'}
+                  title={
+                    schedule.status === 'CANCELLED'
+                      ? 'Cancelled schedules cannot be updated'
+                      : 'Update schedule status & notes'
+                  }
+                >
+                  Update Status
+                </Button>
+              )}
+              <div className="flex-1" />
+              <Button type="button" variant="outline" size="sm" onClick={onClose}>
+                Close
+              </Button>
+            </>
+          ) : (
+            <>
+              <Button
+                type="button"
+                variant="danger"
+                size="sm"
+                leftIcon={<TrashIcon className="h-4 w-4" />}
+                onClick={handleDeleteSchedule}
+                isLoading={isDeleting}
+              >
+                Delete Schedule
+              </Button>
 
-          <Button type="button" variant="outline" size="sm" onClick={onClose}>
-            Close
-          </Button>
+              <Button type="button" variant="outline" size="sm" onClick={onClose}>
+                Close
+              </Button>
+            </>
+          )}
         </div>
       </div>
     </div>
