@@ -1,20 +1,20 @@
-import { useState, type FC } from 'react'
-import { Link, useLocation, useNavigate } from 'react-router-dom'
-import { useForm } from 'react-hook-form'
-import { AuthLayout } from '../layouts/AuthLayout'
-import { Input } from '../components/ui/Input'
-import { PasswordInput } from '../components/ui/PasswordInput'
-import { Checkbox } from '../components/ui/Checkbox'
-import { Button } from '../components/ui/Button'
-import { AuthPrompt } from '../components/ui/AuthPrompt'
-import { EmailVerificationModal } from '../components/ui/EmailVerificationModal'
-import type { LoginFormValues } from '../types/auth'
-import { EMAIL_REGEX } from '../constants/auth'
+import {type FC, useState} from 'react'
+import {Link, useLocation, useNavigate} from 'react-router-dom'
+import {useForm} from 'react-hook-form'
+import {AuthLayout} from '../layouts/AuthLayout'
+import {Input} from '../components/ui/Input'
+import {PasswordInput} from '../components/ui/PasswordInput'
+import {Checkbox} from '../components/ui/Checkbox'
+import {Button} from '../components/ui/Button'
+import {AuthPrompt} from '../components/ui/AuthPrompt'
+import {EmailVerificationModal} from '../components/ui/EmailVerificationModal'
+import type {LoginFormValues} from '../types/auth'
+import {EMAIL_REGEX} from '../constants/auth'
 import authService from '../services/authService'
 import customerPortalService from '../services/customerPortalService'
 import toast from 'react-hot-toast'
-import { HttpStatusCode } from 'axios'
-import { useCurrentUser } from '../context/UserContext'
+import {HttpStatusCode} from 'axios'
+import {useCurrentUser} from '../context/UserContext'
 
 interface LoginProps {
   mode?: 'customer' | 'employee'
@@ -82,8 +82,8 @@ export const Login: FC<LoginProps> = ({ mode }) => {
         }
       }
 
-      toast.success('Logged in successfully!')
-      navigate('/service-requests')
+      navigate('/service-requests');
+
       return
     }
 
